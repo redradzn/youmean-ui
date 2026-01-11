@@ -1,0 +1,77 @@
+################################################################################
+# CRITICAL: PROPRIETARY BACKEND - NEVER COMMIT TO GITHUB
+################################################################################
+# This protects your intellectual property and proprietary algorithms
+
+# ENTIRE RUST BACKEND (contains proprietary algorithms & business logic)
+rust/
+
+# Python Algorithm Files (if moved to root)
+astro_engine.py
+translation_engine.py
+*.pyc
+__pycache__/
+
+# Database Files (contains user data)
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Environment & Secrets
+.env
+.env.local
+.env.production
+secrets/
+config/secrets.yaml
+
+################################################################################
+# STANDARD FLUTTER/DART IGNORES
+################################################################################
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
