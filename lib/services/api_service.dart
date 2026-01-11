@@ -4,7 +4,12 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000';
+  // API base URL - can be overridden at build time with:
+  // flutter build web --dart-define=API_URL=https://your-backend.railway.app
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://localhost:3000',
+  );
 
   /// Submit birth data to local server and get request ID
   static Future<String?> submitRequest({
