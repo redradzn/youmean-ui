@@ -4,10 +4,11 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // API base URL - can be overridden at build time with:
-  // flutter build web --dart-define=API_URL=https://your-backend.railway.app
+  // flutter build web --dart-define=API_URL=https://your-ngrok-url.ngrok-free.dev
+  // Current ngrok URL: https://dennise-cartable-unquixotically.ngrok-free.dev
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://dennise-cartable-unquixotically.ngrok-free.dev',
   );
 
   /// Submit birth data to local server and get request ID
