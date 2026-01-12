@@ -24,8 +24,8 @@ COPY . .
 # Accept API_URL as build argument (defaults to localhost for development)
 ARG API_URL=http://localhost:3000
 
-# Build Flutter web app for production with API URL
-RUN flutter build web --release --web-renderer canvaskit --dart-define=API_URL=${API_URL}
+# Build Flutter web app for production with API URL and proper base-href
+RUN flutter build web --release --base-href=/ --dart-define=API_URL=${API_URL}
 
 # Expose port (Railway will assign PORT via env variable)
 EXPOSE 8080

@@ -1,11 +1,11 @@
 {
-    "name": "youmean",
-    "short_name": "youmean",
-    "start_url": ".",
+    "name": "YouMean - Unlock Ancient Wisdom",
+    "short_name": "YouMean",
+    "start_url": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A0A0A",
+    "theme_color": "#008080",
+    "description": "Privacy-first app combining science, spirituality, and ancient wisdom through modern logic.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
