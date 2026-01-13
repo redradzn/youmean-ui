@@ -1223,31 +1223,19 @@ class WaitingScreen extends StatefulWidget {
 }
 
 class _WaitingScreenState extends State<WaitingScreen> {
-  String _status = 'pending';
-  bool _isPolling = true;
+  bool _isCheckingNow = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _startPolling();
-  }
+  void _checkResultsNow() async {
+    setState(() {
+      _isCheckingNow = true;
+    });
 
-  void _startPolling() async {
-    final result = await ApiService.waitForResults(
-      widget.requestId,
-      onStatusUpdate: (status) {
-        if (mounted) {
-          setState(() {
-            _status = status;
-          });
-        }
-      },
-    );
+    final result = await ApiService.pollResults(widget.requestId);
 
     if (!mounted) return;
 
     setState(() {
-      _isPolling = false;
+      _isCheckingNow = false;
     });
 
     if (result != null && result['status'] == 'completed' && result['result'] != null) {
@@ -1264,13 +1252,14 @@ class _WaitingScreenState extends State<WaitingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${result['error'] ?? 'Unknown error'}')),
       );
-      Navigator.pop(context);
     } else {
-      // Timeout or error
+      // Still pending
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request timed out. Please try again.')),
+        const SnackBar(
+          content: Text('Your request is still being processed. Please check back in 24-48 hours.'),
+          duration: Duration(seconds: 4),
+        ),
       );
-      Navigator.pop(context);
     }
   }
 
@@ -1278,33 +1267,33 @@ class _WaitingScreenState extends State<WaitingScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    String statusMessage;
-    String subMessage;
-    if (_status == 'pending') {
-      statusMessage = 'Request Submitted Successfully!';
-      subMessage = 'Please wait 24-48 hours and come back here once your result is delivered for free.';
-    } else if (_status == 'processing') {
-      statusMessage = 'Your results are being calculated...';
-      subMessage = 'This should only take a moment.';
-    } else {
-      statusMessage = 'Almost ready...';
-      subMessage = 'Finalizing your results.';
-    }
-
     return Scaffold(
       body: SafeArea(
         child: Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(40),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF008080)),
+                // Success icon
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF008080).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    size: 48,
+                    color: Color(0xFF008080),
+                  ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
+
+                // Success message
                 Text(
-                  statusMessage,
+                  'Request Submitted Successfully!',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,
@@ -1313,8 +1302,10 @@ class _WaitingScreenState extends State<WaitingScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                // Instructions
                 Text(
-                  subMessage,
+                  'Your request is being processed offline for maximum security and privacy.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -1323,17 +1314,57 @@ class _WaitingScreenState extends State<WaitingScreen> {
                     color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Your request is being processed offline for maximum security',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w300,
-                    color: isDark ? Colors.white38 : Colors.black38,
+                const SizedBox(height: 32),
+
+                // Request ID box
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Your Request ID',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 1,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SelectableText(
+                        widget.requestId,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'monospace',
+                          color: const Color(0xFF008080),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Save this ID to check your results later',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w300,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
+
+                // Timeline info
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -1344,32 +1375,82 @@ class _WaitingScreenState extends State<WaitingScreen> {
                       width: 1,
                     ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
-                      const Icon(
-                        Icons.bookmark_outline,
-                        size: 16,
-                        color: Color(0xFF008080),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.schedule,
+                            size: 16,
+                            color: Color(0xFF008080),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Results typically ready in 24-48 hours',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 8),
                       Text(
-                        'Tip: Bookmark this page to check back later',
+                        'Bookmark this page or save your Request ID',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white60 : Colors.black54,
+                          fontSize: 11,
+                          color: isDark ? Colors.white38 : Colors.black38,
                         ),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 40),
+
+                // Check Results Now button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: TextButton(
+                    onPressed: _isCheckingNow ? null : _checkResultsNow,
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFF008080),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isCheckingNow
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Check Results Now',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Back to home button
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text(
-                    'Cancel',
+                    'Back to Home',
                     style: TextStyle(
                       color: isDark ? Colors.white38 : Colors.black38,
+                      fontSize: 14,
                     ),
                   ),
                 ),
