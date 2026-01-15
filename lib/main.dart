@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'services/api_service.dart';
+import 'services/storage_service.dart';
+import 'models/stored_request.dart';
+import 'widgets/scarab_badge.dart';
+import 'screens/my_requests_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await StorageService.init();
   runApp(const YouMeanApp());
 }
 
@@ -84,6 +90,7 @@ class _HomePageState extends State<HomePage> {
   bool _isMoreHovered = false;
   bool _isSupportHovered = false;
   bool _isAboutHovered = false;
+  bool _isMyRequestsHovered = false;
   bool _showIntro = true;
   bool _believeScience = false;
   bool _believeGod = false;
@@ -288,18 +295,20 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // App title
-                  Text(
-                    'YouMean',
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // App title
+                      Text(
+                        'YouMean',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
@@ -579,6 +588,19 @@ class _HomePageState extends State<HomePage> {
                             );
 
                             if (requestId != null) {
+                              // Save to localStorage
+                              await StorageService.saveRequest(StoredRequest(
+                                requestId: requestId,
+                                label: "Request ${_selectedDate!.day}/${_selectedDate!.month}",
+                                birthDate: birthDate,
+                                birthPlace: _placeController.text,
+                                birthTime: birthTime,
+                                status: RequestStatus.pending,
+                                submittedAt: DateTime.now(),
+                                lastCheckedAt: null,
+                                hasNotification: false,
+                              ));
+
                               // Navigate to waiting screen
                               Navigator.push(
                                 context,
@@ -666,6 +688,59 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // My Requests button
+                        MouseRegion(
+                          onEnter: (_) => setState(() => _isMyRequestsHovered = true),
+                          onExit: (_) => setState(() => _isMyRequestsHovered = false),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const MyRequestsPage(),
+                                ),
+                              );
+                            },
+                            child: AnimatedScale(
+                              scale: _isMyRequestsHovered ? 1.05 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: _isMyRequestsHovered
+                                        ? const [
+                                            Color(0xFF00A0A0), // Brighter Teal
+                                            Color(0xFF10B0B0), // Brighter Cyan
+                                          ]
+                                        : const [
+                                            Color(0xFF008080), // Teal
+                                            Color(0xFF20B2AA), // Light Sea Green
+                                          ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  'My Requests',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w300,
+                                    color: Colors.white,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
                         // Support Creator button
                         MouseRegion(
                           onEnter: (_) => setState(() => _isSupportHovered = true),
@@ -778,6 +853,10 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+            ),
+            // Scarab notification badge
+            const ScarabBadge(),
+          ],
         ),
       ),
     );
@@ -1230,36 +1309,63 @@ class _WaitingScreenState extends State<WaitingScreen> {
       _isCheckingNow = true;
     });
 
-    final result = await ApiService.pollResults(widget.requestId);
+    try {
+      final result = await ApiService.pollResults(widget.requestId);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isCheckingNow = false;
-    });
+      if (result != null && result['status'] == 'completed' && result['result'] != null) {
+        // Update storage status to "ready"
+        await StorageService.updateRequestStatus(
+          widget.requestId,
+          RequestStatus.ready,
+        );
 
-    if (result != null && result['status'] == 'completed' && result['result'] != null) {
-      // Navigate to results page
-      final calcResult = CalculationResult.fromJson(result['result']);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResultsPage(result: calcResult),
-        ),
-      );
-    } else if (result != null && result['status'] == 'failed') {
-      // Show error
+        // Navigate to results page
+        final calcResult = CalculationResult.fromJson(result['result']);
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultsPage(
+              result: calcResult,
+              requestId: widget.requestId,
+            ),
+          ),
+        );
+      } else if (result != null && result['status'] == 'failed') {
+        // Update storage status to completed (even if failed)
+        await StorageService.updateRequestStatus(
+          widget.requestId,
+          RequestStatus.completed,
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${result['error'] ?? 'Unknown error'}')),
+        );
+      } else {
+        // Still pending
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Still processing. Check back in 24-48 hours!'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${result['error'] ?? 'Unknown error'}')),
+        SnackBar(content: Text('Error checking results: $e')),
       );
-    } else {
-      // Still pending
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your request is still being processed. Please check back in 24-48 hours.'),
-          duration: Duration(seconds: 4),
-        ),
-      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingNow = false;
+        });
+      }
     }
   }
 
@@ -1466,8 +1572,9 @@ class _WaitingScreenState extends State<WaitingScreen> {
 // Results Page - shows calculation results
 class ResultsPage extends StatefulWidget {
   final CalculationResult result;
+  final String? requestId;
 
-  const ResultsPage({super.key, required this.result});
+  const ResultsPage({super.key, required this.result, this.requestId});
 
   @override
   State<ResultsPage> createState() => _ResultsPageState();
@@ -1475,6 +1582,15 @@ class ResultsPage extends StatefulWidget {
 
 class _ResultsPageState extends State<ResultsPage> {
   int _yearsToShow = 5; // Default: show last 5 years
+
+  @override
+  void initState() {
+    super.initState();
+    // Mark as viewed when results are displayed
+    if (widget.requestId != null) {
+      StorageService.markAsViewed(widget.requestId!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
