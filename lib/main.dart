@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'services/api_service.dart';
 import 'services/storage_service.dart';
 import 'models/stored_request.dart';
 import 'widgets/scarab_badge.dart';
-import 'screens/my_requests_page.dart';
+import 'screens/settings_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,46 +22,58 @@ class YouMeanApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF000000), // Pure black
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.white,
+          fillColor: const Color(0xFF1A1A1A), // Very dark gray for inputs
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: Color(0xFF008080), width: 1),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: Color(0xFF333333), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.black12, width: 1),
+            borderSide: const BorderSide(color: Color(0xFF008080), width: 2),
           ),
+          hintStyle: const TextStyle(color: Color(0xFF666666)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        ),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Color(0xFFFFFFFF)),
+          bodyMedium: TextStyle(color: Color(0xFFFFFFFF)),
+          bodySmall: TextStyle(color: Color(0xFFFFFFFF)),
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+        scaffoldBackgroundColor: const Color(0xFF000000), // Pure black
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1C1C1E),
+          fillColor: const Color(0xFF1A1A1A), // Very dark gray for inputs
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: Color(0xFF008080), width: 1),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: Color(0xFF333333), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.white12, width: 1),
+            borderSide: const BorderSide(color: Color(0xFF008080), width: 2),
           ),
+          hintStyle: const TextStyle(color: Color(0xFF666666)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        ),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Color(0xFFFFFFFF)),
+          bodyMedium: TextStyle(color: Color(0xFFFFFFFF)),
+          bodySmall: TextStyle(color: Color(0xFFFFFFFF)),
         ),
       ),
       themeMode: ThemeMode.system,
@@ -90,11 +103,45 @@ class _HomePageState extends State<HomePage> {
   bool _isMoreHovered = false;
   bool _isSupportHovered = false;
   bool _isAboutHovered = false;
-  bool _isMyRequestsHovered = false;
+  bool _isSettingsHovered = false;
   bool _showIntro = true;
   bool _believeScience = false;
   bool _believeGod = false;
   bool _believeSpirituality = false;
+  bool _isLoadingPreferences = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBeliefPreferences();
+  }
+
+  Future<void> _loadBeliefPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSetBeliefs = prefs.getBool('has_set_beliefs') ?? false;
+
+    if (hasSetBeliefs) {
+      setState(() {
+        _believeScience = prefs.getBool('believe_science') ?? false;
+        _believeGod = prefs.getBool('believe_god') ?? false;
+        _believeSpirituality = prefs.getBool('believe_spirituality') ?? false;
+        _showIntro = false;
+        _isLoadingPreferences = false;
+      });
+    } else {
+      setState(() {
+        _isLoadingPreferences = false;
+      });
+    }
+  }
+
+  Future<void> _saveBeliefPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_set_beliefs', true);
+    await prefs.setBool('believe_science', _believeScience);
+    await prefs.setBool('believe_god', _believeGod);
+    await prefs.setBool('believe_spirituality', _believeSpirituality);
+  }
 
   @override
   void dispose() {
@@ -111,22 +158,19 @@ class _HomePageState extends State<HomePage> {
 
     if (_showIntro) {
       return Scaffold(
-        body: SafeArea(
-          child: Center(
+        body: Center(
+          child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'YouMean',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w200,
-                      letterSpacing: 4,
-                      color: isDark ? Colors.white : Colors.black,
+                  Center(
+                    child: Image.asset(
+                      'ardet_assets/umean logo.png',
+                      width: 200,
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: 60),
@@ -137,7 +181,7 @@ class _HomePageState extends State<HomePage> {
                       fontSize: 16,
                       fontWeight: FontWeight.w300,
                       height: 1.6,
-                      color: isDark ? Colors.white70 : Colors.black87,
+                      color: isDark ? const Color(0xFFC9A961) : const Color(0xFF705C45),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -146,141 +190,205 @@ class _HomePageState extends State<HomePage> {
                   // Science checkbox
                   GestureDetector(
                     onTap: () => setState(() => _believeScience = !_believeScience),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isDark ? Colors.white38 : Colors.black38,
-                              width: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _believeScience
+                              ? const Color(0xFF008080)
+                              : (isDark ? Colors.white12 : Colors.black12),
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: _believeScience ? const Color(0xFF008080) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: _believeScience ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                width: 2,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(4),
-                            color: _believeScience
-                                ? const Color(0xFF008080)
-                                : Colors.transparent,
+                            child: _believeScience
+                                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                : null,
                           ),
-                          child: _believeScience
-                              ? const Icon(Icons.check, size: 16, color: Colors.white)
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          'Science',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                            color: isDark ? Colors.white : Colors.black,
-                            letterSpacing: 1,
+                          const SizedBox(width: 16),
+                          Text(
+                            'Science',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // God or Gods checkbox
                   GestureDetector(
                     onTap: () => setState(() => _believeGod = !_believeGod),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isDark ? Colors.white38 : Colors.black38,
-                              width: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _believeGod
+                              ? const Color(0xFF008080)
+                              : (isDark ? Colors.white12 : Colors.black12),
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: _believeGod ? const Color(0xFF008080) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: _believeGod ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                width: 2,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(4),
-                            color: _believeGod
-                                ? const Color(0xFF800080)
-                                : Colors.transparent,
+                            child: _believeGod
+                                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                : null,
                           ),
-                          child: _believeGod
-                              ? const Icon(Icons.check, size: 16, color: Colors.white)
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          'One or More Gods',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                            color: isDark ? Colors.white : Colors.black,
-                            letterSpacing: 1,
+                          const SizedBox(width: 16),
+                          Text(
+                            'One or More Gods',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Spirituality checkbox
                   GestureDetector(
                     onTap: () => setState(() => _believeSpirituality = !_believeSpirituality),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: isDark ? Colors.white38 : Colors.black38,
-                              width: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _believeSpirituality
+                              ? const Color(0xFF008080)
+                              : (isDark ? Colors.white12 : Colors.black12),
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: _believeSpirituality ? const Color(0xFF008080) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: _believeSpirituality ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                width: 2,
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(4),
-                            color: _believeSpirituality
-                                ? const Color(0xFF9370DB)
-                                : Colors.transparent,
+                            child: _believeSpirituality
+                                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                                : null,
                           ),
-                          child: _believeSpirituality
-                              ? const Icon(Icons.check, size: 16, color: Colors.white)
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          'Spirituality',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                            color: isDark ? Colors.white : Colors.black,
-                            letterSpacing: 1,
+                          const SizedBox(width: 16),
+                          Text(
+                            'Spirituality',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 40),
 
                   // Continue button
                   SizedBox(
                     height: 56,
-                    child: TextButton(
-                      onPressed: (_believeScience || _believeGod || _believeSpirituality)
-                          ? () => setState(() => _showIntro = false)
-                          : null,
-                      style: TextButton.styleFrom(
-                        backgroundColor: (_believeScience || _believeGod || _believeSpirituality)
-                            ? const Color(0xFFC7C7C7)
-                            : const Color(0xFFE0E0E0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Continue',
-                        style: TextStyle(
-                          color: (_believeScience || _believeGod || _believeSpirituality)
-                              ? Colors.black
-                              : Colors.black38,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 2,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: (_believeScience || _believeGod || _believeSpirituality)
+                            ? () async {
+                                await _saveBeliefPreferences();
+                                setState(() => _showIntro = false);
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: !(_believeScience || _believeGod || _believeSpirituality)
+                                ? const Color(0xFF1A1A1A)
+                                : null,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: (_believeScience || _believeGod || _believeSpirituality)
+                              ? Stack(
+                                  children: [
+                                    Opacity(
+                                      opacity: 0.6,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          image: const DecorationImage(
+                                            image: AssetImage('ardet_assets/texture.png'),
+                                            fit: BoxFit.cover,
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Continue',
+                                        style: TextStyle(
+                                          color: Color(0xFFFFFFFF),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Container(
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Continue',
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white38 : Colors.black38,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -307,26 +415,20 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // App title
-                      Text(
-                        'YouMean',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w200,
-                      letterSpacing: 4,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                      Center(
+                        child: Image.asset(
+                          'ardet_assets/umean logo.png',
+                          width: 320,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                  const SizedBox(height: 32),
 
                   // Description
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Text(
-                      'anonymous. no ads. no data collection.\n'
-                      'no dodgy terms and conditions.\n\n'
-                      'its like the 90s again.\n\n'
-                      'UX is open source. backend is decentralized.',
+                      'Anon, no data . UX is open source. Like 90\'s freedom without being chained to the internet.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -352,8 +454,16 @@ class _HomePageState extends State<HomePage> {
                                 return Theme(
                                   data: Theme.of(context).copyWith(
                                     timePickerTheme: TimePickerThemeData(
-                                      backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-                                      dialBackgroundColor: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF5F5F5),
+                                      backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                                      dialBackgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
+                                      hourMinuteColor: MaterialStateColor.resolveWith((states) =>
+                                        states.contains(MaterialState.selected) ? const Color(0xFF008080) : (isDark ? const Color(0xFF1A1A1A) : const Color(0xFF000000))),
+                                      dayPeriodColor: MaterialStateColor.resolveWith((states) =>
+                                        states.contains(MaterialState.selected) ? const Color(0xFF008080) : (isDark ? const Color(0xFF1A1A1A) : const Color(0xFF000000))),
+                                    ),
+                                    colorScheme: ColorScheme.fromSeed(
+                                      seedColor: const Color(0xFF008080),
+                                      brightness: isDark ? Brightness.dark : Brightness.light,
                                     ),
                                   ),
                                   child: child!,
@@ -462,9 +572,15 @@ class _HomePageState extends State<HomePage> {
                           return Theme(
                             data: Theme.of(context).copyWith(
                               datePickerTheme: DatePickerThemeData(
-                                backgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                                backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
                                 headerBackgroundColor: const Color(0xFF008080),
                                 headerForegroundColor: Colors.white,
+                                dayStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
+                              ),
+                              colorScheme: ColorScheme.fromSeed(
+                                seedColor: const Color(0xFF008080),
+                                brightness: isDark ? Brightness.dark : Brightness.light,
+                                secondary: const Color(0xFFC9A961),
                               ),
                             ),
                             child: child!,
@@ -505,11 +621,13 @@ class _HomePageState extends State<HomePage> {
                       hintStyle: TextStyle(
                         fontWeight: FontWeight.w300,
                         fontSize: 16,
+                        color: Color(0xFF666666),
                       ),
                     ),
                     style: const TextStyle(
                       fontWeight: FontWeight.w300,
                       fontSize: 16,
+                      color: Color(0xFFFFFFFF),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -522,17 +640,19 @@ class _HomePageState extends State<HomePage> {
                       hintStyle: TextStyle(
                         fontWeight: FontWeight.w300,
                         fontSize: 16,
+                        color: Color(0xFF666666),
                       ),
                     ),
                     style: const TextStyle(
                       fontWeight: FontWeight.w300,
                       fontSize: 16,
+                      color: Color(0xFFFFFFFF),
                     ),
                     maxLines: 2,
                   ),
                   const SizedBox(height: 60),
 
-                  // Calculate button (light gray with black text)
+                  // Calculate button (teal/sandy gradient)
                   MouseRegion(
                     onEnter: (_) => setState(() => _isCalculateHovered = true),
                     onExit: (_) => setState(() => _isCalculateHovered = false),
@@ -540,10 +660,22 @@ class _HomePageState extends State<HomePage> {
                       scale: _isCalculateHovered ? 1.02 : 1.0,
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOut,
-                      child: SizedBox(
+                      child: Container(
                         height: 56,
-                        child: TextButton(
-                          onPressed: () async {
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF008080).withOpacity(0.4),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
                             // Validate inputs
                             if (_selectedDate == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -614,27 +746,44 @@ class _HomePageState extends State<HomePage> {
                               );
                             }
                           },
-                          style: TextButton.styleFrom(
-                            backgroundColor: _isCalculateHovered
-                                ? const Color(0xFFD7D7D7)
-                                : const Color(0xFFC7C7C7),
-                            shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          child: const Text(
-                            'Calculate',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 2,
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      image: const DecorationImage(
+                                        image: AssetImage('ardet_assets/texture.png'),
+                                        fit: BoxFit.cover,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    'Calculate',
+                                    style: TextStyle(
+                                      color: Color(0xFFFFFFFF),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
+                ),
                   const SizedBox(height: 16),
 
                   // Menu toggle button
@@ -657,23 +806,13 @@ class _HomePageState extends State<HomePage> {
                               horizontal: 16,
                               vertical: 8,
                             ),
-                            child: ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [
-                                  Color(0xFF00FFFF), // Bright Cyan
-                                  Color(0xFFFF00FF), // Bright Magenta
-                                ],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ).createShader(bounds),
-                              child: Text(
-                                _showMenu ? 'Hide' : 'More',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 1.5,
-                                ),
+                            child: Text(
+                              _showMenu ? 'Hide' : 'More',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFC9A961),
+                                letterSpacing: 1.5,
                               ),
                             ),
                           ),
@@ -688,59 +827,62 @@ class _HomePageState extends State<HomePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // My Requests button
+                        // Settings button
                         MouseRegion(
-                          onEnter: (_) => setState(() => _isMyRequestsHovered = true),
-                          onExit: (_) => setState(() => _isMyRequestsHovered = false),
+                          onEnter: (_) => setState(() => _isSettingsHovered = true),
+                          onExit: (_) => setState(() => _isSettingsHovered = false),
                           child: GestureDetector(
                             onTap: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const MyRequestsPage(),
+                                  builder: (context) => const SettingsPage(),
                                 ),
                               );
                             },
                             child: AnimatedScale(
-                              scale: _isMyRequestsHovered ? 1.05 : 1.0,
+                              scale: _isSettingsHovered ? 1.05 : 1.0,
                               duration: const Duration(milliseconds: 200),
                               curve: Curves.easeOut,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: _isMyRequestsHovered
-                                        ? const [
-                                            Color(0xFF00A0A0), // Brighter Teal
-                                            Color(0xFF10B0B0), // Brighter Cyan
-                                          ]
-                                        : const [
-                                            Color(0xFF008080), // Teal
-                                            Color(0xFF20B2AA), // Light Sea Green
-                                          ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
+                              child: SizedBox(
+                                width: 60,
+                                height: 50,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: AnimatedOpacity(
+                                        opacity: _isSettingsHovered ? 0.8 : 0.6,
+                                        duration: const Duration(milliseconds: 200),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            image: const DecorationImage(
+                                              image: AssetImage('ardet_assets/texture_2.png'),
+                                              fit: BoxFit.cover,
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const Center(
+                                      child: Icon(
+                                        Icons.settings,
+                                        color: Color(0xFFFFFFFF),
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                child: const Text(
-                                  'My Requests',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w300,
-                                    color: Colors.white,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
+                              ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 10),
                         // Support Creator button
                         MouseRegion(
                           onEnter: (_) => setState(() => _isSupportHovered = true),
@@ -758,42 +900,49 @@ class _HomePageState extends State<HomePage> {
                               scale: _isSupportHovered ? 1.05 : 1.0,
                               duration: const Duration(milliseconds: 200),
                               curve: Curves.easeOut,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: _isSupportHovered
-                                        ? const [
-                                            Color(0xFF00A0A0), // Brighter Teal
-                                            Color(0xFFA000A0), // Brighter Purple
-                                          ]
-                                        : const [
-                                            Color(0xFF008080), // Teal
-                                            Color(0xFF800080), // Purple
-                                          ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
+                              child: SizedBox(
+                                width: 140,
+                                height: 50,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  'Support Creator',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w300,
-                                    color: Colors.white,
-                                    letterSpacing: 1,
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: AnimatedOpacity(
+                                          opacity: _isSupportHovered ? 0.8 : 0.6,
+                                          duration: const Duration(milliseconds: 200),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              image: const DecorationImage(
+                                                image: AssetImage('ardet_assets/texture_2.png'),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const Center(
+                                        child: Text(
+                                          'Support Creator',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w300,
+                                            color: Color(0xFFFFFFFF),
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 10),
                         // About Project button
                         MouseRegion(
                           onEnter: (_) => setState(() => _isAboutHovered = true),
@@ -811,35 +960,42 @@ class _HomePageState extends State<HomePage> {
                               scale: _isAboutHovered ? 1.05 : 1.0,
                               duration: const Duration(milliseconds: 200),
                               curve: Curves.easeOut,
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: _isAboutHovered
-                                        ? const [
-                                            Color(0xFF005050), // Slightly brighter Dark Teal
-                                            Color(0xFF500050), // Slightly brighter Dark Purple
-                                          ]
-                                        : const [
-                                            Color(0xFF004040), // Dark Teal (50% darker)
-                                            Color(0xFF400040), // Dark Purple (50% darker)
-                                          ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
+                              child: SizedBox(
+                                width: 140,
+                                height: 50,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  'About Project',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w300,
-                                    color: Colors.white,
-                                    letterSpacing: 1,
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: AnimatedOpacity(
+                                          opacity: _isAboutHovered ? 0.8 : 0.6,
+                                          duration: const Duration(milliseconds: 200),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              image: const DecorationImage(
+                                                image: AssetImage('ardet_assets/texture_2.png'),
+                                                fit: BoxFit.cover,
+                                              ),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const Center(
+                                        child: Text(
+                                          'About Project',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w300,
+                                            color: Color(0xFFFFFFFF),
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -1374,140 +1530,37 @@ class _WaitingScreenState extends State<WaitingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
       body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
+          child: Padding(
             padding: const EdgeInsets.all(40),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Success icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF008080).withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline,
-                    size: 48,
-                    color: Color(0xFF008080),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Success message
-                Text(
-                  'Request Submitted Successfully!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w400,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Instructions
-                Text(
-                  'Your request is being processed offline for maximum security and privacy.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w300,
-                    height: 1.6,
-                    color: isDark ? Colors.white70 : Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Request ID box
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
+                // Success checkmark icon
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Stack(
                     children: [
-                      Text(
-                        'Your Request ID',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 1,
-                          color: isDark ? Colors.white38 : Colors.black38,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SelectableText(
-                        widget.requestId,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'monospace',
-                          color: const Color(0xFF008080),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Save this ID to check your results later',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w300,
-                          color: isDark ? Colors.white38 : Colors.black38,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Timeline info
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF008080).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFF008080).withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.schedule,
-                            size: 16,
-                            color: Color(0xFF008080),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Results typically ready in 24-48 hours',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              color: isDark ? Colors.white70 : Colors.black87,
+                      Opacity(
+                        opacity: 0.6,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('ardet_assets/texture.png'),
+                              fit: BoxFit.cover,
                             ),
+                            shape: BoxShape.circle,
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Bookmark this page or save your Request ID',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? Colors.white38 : Colors.black38,
+                      const Center(
+                        child: Icon(
+                          Icons.check_rounded,
+                          size: 60,
+                          color: Color(0xFFFFFFFF),
                         ),
                       ),
                     ],
@@ -1515,48 +1568,41 @@ class _WaitingScreenState extends State<WaitingScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Check Results Now button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: TextButton(
-                    onPressed: _isCheckingNow ? null : _checkResultsNow,
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xFF008080),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isCheckingNow
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            'Check Results Now',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 1,
-                            ),
-                          ),
+                // Simple success message
+                Text(
+                  'Submitted',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w300,
+                    color: isDark ? Colors.white : Colors.black,
+                    letterSpacing: 1,
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Simple instruction
+                Text(
+                  'You\'ll be notified when ready',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w300,
+                    color: isDark ? const Color(0xFFC9A961) : const Color(0xFF705C45),
+                  ),
+                ),
+                const SizedBox(height: 60),
 
                 // Back to home button
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: Text(
-                    'Back to Home',
+                    'Done',
                     style: TextStyle(
-                      color: isDark ? Colors.white38 : Colors.black38,
-                      fontSize: 14,
+                      color: const Color(0xFF008080),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 1,
                     ),
                   ),
                 ),
@@ -1609,7 +1655,7 @@ class _ResultsPageState extends State<ResultsPage> {
     final labels = selfie.rowLabels;
 
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
