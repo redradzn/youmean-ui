@@ -24,7 +24,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/submit'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: jsonEncode({
           'birth_city': birthCity,
           'birth_date': birthDate,
@@ -54,6 +57,9 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/poll/$requestId'),
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
       );
 
       if (response.statusCode == 200) {

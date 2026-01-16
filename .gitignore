@@ -76,3 +76,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 rust/
+
+# Local Netlify folder
+.netlify

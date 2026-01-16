@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'services/api_service.dart';
 import 'services/storage_service.dart';
 import 'models/stored_request.dart';
 import 'widgets/scarab_badge.dart';
+import 'widgets/location_autocomplete.dart';
 import 'screens/settings_page.dart';
 
 void main() async {
@@ -12,8 +14,29 @@ void main() async {
   runApp(const YouMeanApp());
 }
 
-class YouMeanApp extends StatelessWidget {
+class YouMeanApp extends StatefulWidget {
   const YouMeanApp({super.key});
+
+  @override
+  State<YouMeanApp> createState() => _YouMeanAppState();
+}
+
+class _YouMeanAppState extends State<YouMeanApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDarkMode = prefs.getBool('dark_mode') ?? true;
+    setState(() {
+      _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,30 +45,30 @@ class YouMeanApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF000000), // Pure black
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF8F8F8),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1A1A1A), // Very dark gray for inputs
+          fillColor: Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF008080), width: 1),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF333333), width: 1),
+            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF008080), width: 2),
           ),
-          hintStyle: const TextStyle(color: Color(0xFF666666)),
+          hintStyle: const TextStyle(color: Color(0xFF999999)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         ),
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Color(0xFFFFFFFF)),
-          bodyMedium: TextStyle(color: Color(0xFFFFFFFF)),
-          bodySmall: TextStyle(color: Color(0xFFFFFFFF)),
+          bodyLarge: TextStyle(color: Colors.black),
+          bodyMedium: TextStyle(color: Colors.black),
+          bodySmall: TextStyle(color: Colors.black),
         ),
       ),
       darkTheme: ThemeData(
@@ -76,7 +99,7 @@ class YouMeanApp extends StatelessWidget {
           bodySmall: TextStyle(color: Color(0xFFFFFFFF)),
         ),
       ),
-      themeMode: ThemeMode.system,
+      themeMode: _themeMode,
       home: const HomePage(),
     );
   }
@@ -93,8 +116,9 @@ class _HomePageState extends State<HomePage> {
   final _dateController = TextEditingController();
   final _timeController = TextEditingController();
   final _placeController = TextEditingController();
-  final _emotionalController = TextEditingController();
+  double _emotionalState = 50.0; // 0 = Big Sad, 100 = Vibing
   bool _skipTime = false;
+  LocationData? _selectedLocationData; // Stores lat/lon from autocomplete
   bool _showMenu = false;
   TimeOfDay? _selectedTime;
   DateTime? _selectedDate;
@@ -148,7 +172,6 @@ class _HomePageState extends State<HomePage> {
     _dateController.dispose();
     _timeController.dispose();
     _placeController.dispose();
-    _emotionalController.dispose();
     super.dispose();
   }
 
@@ -168,7 +191,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Center(
                     child: Image.asset(
-                      'ardet_assets/umean logo.png',
+                      isDark ? 'ardet_assets/umean_dark.png' : 'ardet_assets/umean_logo_light.png',
                       width: 200,
                       fit: BoxFit.contain,
                     ),
@@ -181,7 +204,7 @@ class _HomePageState extends State<HomePage> {
                       fontSize: 16,
                       fontWeight: FontWeight.w300,
                       height: 1.6,
-                      color: isDark ? const Color(0xFFC9A961) : const Color(0xFF705C45),
+                      color: isDark ? Colors.white : Colors.black,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -193,12 +216,12 @@ class _HomePageState extends State<HomePage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _believeScience
                               ? const Color(0xFF008080)
-                              : (isDark ? Colors.white12 : Colors.black12),
+                              : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
                           width: 2,
                         ),
                       ),
@@ -211,7 +234,7 @@ class _HomePageState extends State<HomePage> {
                               color: _believeScience ? const Color(0xFF008080) : Colors.transparent,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: _believeScience ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                color: _believeScience ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black),
                                 width: 2,
                               ),
                             ),
@@ -240,12 +263,12 @@ class _HomePageState extends State<HomePage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _believeGod
                               ? const Color(0xFF008080)
-                              : (isDark ? Colors.white12 : Colors.black12),
+                              : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
                           width: 2,
                         ),
                       ),
@@ -258,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                               color: _believeGod ? const Color(0xFF008080) : Colors.transparent,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: _believeGod ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                color: _believeGod ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black),
                                 width: 2,
                               ),
                             ),
@@ -287,12 +310,12 @@ class _HomePageState extends State<HomePage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _believeSpirituality
                               ? const Color(0xFF008080)
-                              : (isDark ? Colors.white12 : Colors.black12),
+                              : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
                           width: 2,
                         ),
                       ),
@@ -305,7 +328,7 @@ class _HomePageState extends State<HomePage> {
                               color: _believeSpirituality ? const Color(0xFF008080) : Colors.transparent,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: _believeSpirituality ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                color: _believeSpirituality ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black),
                                 width: 2,
                               ),
                             ),
@@ -417,7 +440,7 @@ class _HomePageState extends State<HomePage> {
                       // App title
                       Center(
                         child: Image.asset(
-                          'ardet_assets/umean logo.png',
+                          isDark ? 'ardet_assets/umean_dark.png' : 'ardet_assets/umean_logo_light.png',
                           width: 320,
                           fit: BoxFit.contain,
                         ),
@@ -434,7 +457,7 @@ class _HomePageState extends State<HomePage> {
                         fontSize: 13,
                         fontWeight: FontWeight.w300,
                         height: 1.6,
-                        color: isDark ? Colors.white60 : Colors.black54,
+                        color: isDark ? Colors.white60 : Colors.black,
                         letterSpacing: 0.3,
                       ),
                     ),
@@ -451,29 +474,35 @@ class _HomePageState extends State<HomePage> {
                               context: context,
                               initialTime: _selectedTime ?? TimeOfDay.now(),
                               builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    timePickerTheme: TimePickerThemeData(
-                                      backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
-                                      dialBackgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
-                                      hourMinuteColor: MaterialStateColor.resolveWith((states) =>
-                                        states.contains(MaterialState.selected) ? const Color(0xFF008080) : (isDark ? const Color(0xFF1A1A1A) : const Color(0xFF000000))),
-                                      dayPeriodColor: MaterialStateColor.resolveWith((states) =>
-                                        states.contains(MaterialState.selected) ? const Color(0xFF008080) : (isDark ? const Color(0xFF1A1A1A) : const Color(0xFF000000))),
+                                return MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                                  child: Theme(
+                                    data: Theme.of(context).copyWith(
+                                      timePickerTheme: TimePickerThemeData(
+                                        backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF),
+                                        dialBackgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFFFFFFF),
+                                        hourMinuteColor: MaterialStateColor.resolveWith((states) =>
+                                          states.contains(MaterialState.selected) ? const Color(0xFF008080) : (isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5))),
+                                        dayPeriodColor: MaterialStateColor.resolveWith((states) =>
+                                          states.contains(MaterialState.selected) ? const Color(0xFF008080) : (isDark ? const Color(0xFF1A1A1A) : const Color(0xFFF5F5F5))),
+                                      ),
+                                      colorScheme: ColorScheme.fromSeed(
+                                        seedColor: const Color(0xFF008080),
+                                        brightness: isDark ? Brightness.dark : Brightness.light,
+                                      ),
                                     ),
-                                    colorScheme: ColorScheme.fromSeed(
-                                      seedColor: const Color(0xFF008080),
-                                      brightness: isDark ? Brightness.dark : Brightness.light,
-                                    ),
+                                    child: child!,
                                   ),
-                                  child: child!,
                                 );
                               },
                             );
                             if (time != null) {
                               setState(() {
                                 _selectedTime = time;
-                                _timeController.text = time.format(context);
+                                // Format as 24-hour time "HH:mm"
+                                final hour = time.hour.toString().padLeft(2, '0');
+                                final minute = time.minute.toString().padLeft(2, '0');
+                                _timeController.text = '$hour:$minute';
                               });
                             }
                           },
@@ -482,7 +511,7 @@ class _HomePageState extends State<HomePage> {
                               controller: _timeController,
                               enabled: !_skipTime,
                               decoration: InputDecoration(
-                                hintText: 'Time Born (AM / PM)',
+                                hintText: 'Time Born (24hr format)',
                                 hintStyle: const TextStyle(
                                   fontWeight: FontWeight.w300,
                                   fontSize: 16,
@@ -563,36 +592,173 @@ class _HomePageState extends State<HomePage> {
                   // Date Born (moved below Time)
                   GestureDetector(
                     onTap: () async {
-                      final DateTime? date = await showDatePicker(
+                      final now = DateTime.now();
+                      final initial = _selectedDate ?? DateTime(2026, 1, 1);
+
+                      int selectedDay = initial.day;
+                      int selectedMonth = initial.month;
+                      int selectedYear = initial.year;
+
+                      final months = [
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ];
+
+                      await showDialog(
                         context: context,
-                        initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime(1900),
-                        lastDate: DateTime.now(),
-                        builder: (context, child) {
-                          return Theme(
-                            data: Theme.of(context).copyWith(
-                              datePickerTheme: DatePickerThemeData(
-                                backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
-                                headerBackgroundColor: const Color(0xFF008080),
-                                headerForegroundColor: Colors.white,
-                                dayStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black87),
-                              ),
-                              colorScheme: ColorScheme.fromSeed(
-                                seedColor: const Color(0xFF008080),
-                                brightness: isDark ? Brightness.dark : Brightness.light,
-                                secondary: const Color(0xFFC9A961),
-                              ),
-                            ),
-                            child: child!,
+                        builder: (BuildContext context) {
+                          return StatefulBuilder(
+                            builder: (context, setDialogState) {
+                              // Calculate days in selected month/year
+                              int daysInMonth = DateTime(selectedYear, selectedMonth + 1, 0).day;
+                              if (selectedDay > daysInMonth) {
+                                selectedDay = daysInMonth;
+                              }
+
+                              return Dialog(
+                                backgroundColor: isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  height: 400,
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        'Select Birth Date',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white : Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Expanded(
+                                        child: Row(
+                                          children: [
+                                            // Day picker
+                                            Expanded(
+                                              child: CupertinoPicker(
+                                                scrollController: FixedExtentScrollController(
+                                                  initialItem: selectedDay - 1,
+                                                ),
+                                                itemExtent: 40,
+                                                onSelectedItemChanged: (int index) {
+                                                  setDialogState(() {
+                                                    selectedDay = index + 1;
+                                                  });
+                                                },
+                                                children: List<Widget>.generate(
+                                                  daysInMonth,
+                                                  (int index) => Center(
+                                                    child: Text(
+                                                      '${index + 1}',
+                                                      style: TextStyle(
+                                                        fontSize: 20,
+                                                        color: isDark ? Colors.white : Colors.black,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            // Month picker
+                                            Expanded(
+                                              flex: 2,
+                                              child: CupertinoPicker(
+                                                scrollController: FixedExtentScrollController(
+                                                  initialItem: selectedMonth - 1,
+                                                ),
+                                                itemExtent: 40,
+                                                onSelectedItemChanged: (int index) {
+                                                  setDialogState(() {
+                                                    selectedMonth = index + 1;
+                                                  });
+                                                },
+                                                children: List<Widget>.generate(
+                                                  12,
+                                                  (int index) => Center(
+                                                    child: Text(
+                                                      months[index],
+                                                      style: TextStyle(
+                                                        fontSize: 18,
+                                                        color: isDark ? Colors.white : Colors.black,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            // Year picker
+                                            Expanded(
+                                              child: CupertinoPicker(
+                                                scrollController: FixedExtentScrollController(
+                                                  initialItem: now.year - selectedYear,
+                                                ),
+                                                itemExtent: 40,
+                                                onSelectedItemChanged: (int index) {
+                                                  setDialogState(() {
+                                                    selectedYear = now.year - index;
+                                                  });
+                                                },
+                                                children: List<Widget>.generate(
+                                                  now.year - 1900 + 1,
+                                                  (int index) => Center(
+                                                    child: Text(
+                                                      '${now.year - index}',
+                                                      style: TextStyle(
+                                                        fontSize: 20,
+                                                        color: isDark ? Colors.white : Colors.black,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: Text(
+                                              'Cancel',
+                                              style: TextStyle(
+                                                color: isDark ? Colors.white60 : Colors.black54,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.pop(context);
+                                              setState(() {
+                                                _selectedDate = DateTime(selectedYear, selectedMonth, selectedDay);
+                                                _dateController.text = '${selectedDay.toString().padLeft(2, '0')}/${selectedMonth.toString().padLeft(2, '0')}/$selectedYear';
+                                              });
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFF008080),
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                            child: const Text('Done', style: TextStyle(fontSize: 16)),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
                       );
-                      if (date != null) {
-                        setState(() {
-                          _selectedDate = date;
-                          _dateController.text = '${date.day}/${date.month}/${date.year}';
-                        });
-                      }
                     },
                     child: AbsorbPointer(
                       child: TextField(
@@ -613,44 +779,69 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Place Born
-                  TextField(
+                  // Place Born with location autocomplete
+                  LocationAutocomplete(
                     controller: _placeController,
-                    decoration: const InputDecoration(
-                      hintText: 'Place Born',
-                      hintStyle: TextStyle(
-                        fontWeight: FontWeight.w300,
-                        fontSize: 16,
-                        color: Color(0xFF666666),
-                      ),
-                    ),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w300,
-                      fontSize: 16,
-                      color: Color(0xFFFFFFFF),
-                    ),
+                    isDark: isDark,
+                    onLocationSelected: (locationData) {
+                      setState(() {
+                        _selectedLocationData = locationData;
+                      });
+                    },
                   ),
                   const SizedBox(height: 20),
 
-                  // Emotional State input
-                  TextField(
-                    controller: _emotionalController,
-                    decoration: const InputDecoration(
-                      hintText: 'How are you feeling? (e.g., calm, anxious, energized)',
-                      hintStyle: TextStyle(
-                        fontWeight: FontWeight.w300,
-                        fontSize: 16,
-                        color: Color(0xFF666666),
+                  // Emotional State slider
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Big Sad',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: isDark ? Colors.white60 : Colors.black54,
+                              ),
+                            ),
+                            Text(
+                              'Vibing',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w400,
+                                color: isDark ? Colors.white60 : Colors.black54,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w300,
-                      fontSize: 16,
-                      color: Color(0xFFFFFFFF),
-                    ),
-                    maxLines: 2,
+                      SliderTheme(
+                        data: SliderThemeData(
+                          activeTrackColor: const Color(0xFF008080),
+                          inactiveTrackColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0),
+                          thumbColor: const Color(0xFF008080),
+                          overlayColor: const Color(0xFF008080).withOpacity(0.2),
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                        ),
+                        child: Slider(
+                          value: _emotionalState,
+                          min: 0,
+                          max: 100,
+                          onChanged: (value) {
+                            setState(() {
+                              _emotionalState = value;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 40),
 
                   // Calculate button (teal/sandy gradient)
                   MouseRegion(
@@ -689,12 +880,6 @@ class _HomePageState extends State<HomePage> {
                               );
                               return;
                             }
-                            if (_emotionalController.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Please describe how you feel')),
-                              );
-                              return;
-                            }
 
                             // Format date as YYYY-MM-DD
                             final birthDate = '${_selectedDate!.year.toString().padLeft(4, '0')}-'
@@ -713,7 +898,7 @@ class _HomePageState extends State<HomePage> {
                               birthCity: _placeController.text,
                               birthDate: birthDate,
                               birthTime: birthTime ?? '',
-                              emotionalState: _emotionalController.text,
+                              emotionalState: _emotionalState.round().toString(),
                               believeScience: _believeScience,
                               believeGod: _believeGod,
                               believeSpirituality: _believeSpirituality,
@@ -1035,7 +1220,7 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w300,
-            color: isDark ? Colors.white54 : Colors.black54,
+            color: isDark ? Colors.white54 : Colors.black,
             letterSpacing: 1,
           ),
         ),
@@ -1077,7 +1262,7 @@ class SelfSummaryPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w300,
-                        color: isDark ? Colors.white54 : Colors.black54,
+                        color: isDark ? Colors.white54 : Colors.black,
                         letterSpacing: 1,
                       ),
                     ),
@@ -1221,7 +1406,7 @@ class AboutProjectPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w300,
-                        color: isDark ? Colors.white54 : Colors.black54,
+                        color: isDark ? Colors.white54 : Colors.black,
                         letterSpacing: 1,
                       ),
                     ),
@@ -1255,7 +1440,7 @@ class AboutProjectPage extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
                   height: 1.8,
-                  color: isDark ? Colors.white70 : Colors.black87,
+                  color: isDark ? Colors.white70 : Colors.black,
                   letterSpacing: 0.3,
                 ),
               ),
@@ -1292,7 +1477,7 @@ class AboutProjectPage extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
                   height: 1.8,
-                  color: isDark ? Colors.white60 : Colors.black54,
+                  color: isDark ? Colors.white60 : Colors.black,
                   letterSpacing: 0.3,
                 ),
               ),
@@ -1337,7 +1522,7 @@ class SupportTiersPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w300,
-                        color: isDark ? Colors.white54 : Colors.black54,
+                        color: isDark ? Colors.white54 : Colors.black,
                         letterSpacing: 1,
                       ),
                     ),
@@ -1366,7 +1551,7 @@ class SupportTiersPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w300,
-                  color: isDark ? Colors.white60 : Colors.black54,
+                  color: isDark ? Colors.white60 : Colors.black,
                   height: 1.6,
                   letterSpacing: 0.5,
                 ),
@@ -1430,7 +1615,7 @@ class SupportTiersPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w300,
-                  color: isDark ? Colors.white54 : Colors.black54,
+                  color: isDark ? Colors.white54 : Colors.black,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1588,7 +1773,7 @@ class _WaitingScreenState extends State<WaitingScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w300,
-                    color: isDark ? const Color(0xFFC9A961) : const Color(0xFF705C45),
+                    color: isDark ? Colors.white : Colors.black,
                   ),
                 ),
                 const SizedBox(height: 60),
@@ -1669,7 +1854,7 @@ class _ResultsPageState extends State<ResultsPage> {
                   icon: Icon(
                     Icons.arrow_back_ios,
                     size: 20,
-                    color: isDark ? Colors.white70 : Colors.black87,
+                    color: isDark ? Colors.white70 : Colors.black,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -1751,7 +1936,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                     fontSize: 12,
                                     fontWeight: FontWeight.w400,
                                     letterSpacing: 0.5,
-                                    color: isDark ? Colors.white60 : Colors.black54,
+                                    color: isDark ? Colors.white60 : Colors.black,
                                   ),
                                 ),
                               ),
@@ -1785,7 +1970,7 @@ class _ResultsPageState extends State<ResultsPage> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
-                          color: isDark ? Colors.white60 : Colors.black54,
+                          color: isDark ? Colors.white60 : Colors.black,
                         ),
                       ),
                       Text(
@@ -1862,7 +2047,7 @@ class _ResultsPageState extends State<ResultsPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w300,
-                  color: isDark ? Colors.white70 : Colors.black87,
+                  color: isDark ? Colors.white70 : Colors.black,
                 ),
               ),
             ),
@@ -1878,7 +2063,7 @@ class _ResultsPageState extends State<ResultsPage> {
         child: Text(
           'No Mind Selfie data available',
           style: TextStyle(
-            color: isDark ? Colors.white60 : Colors.black54,
+            color: isDark ? Colors.white60 : Colors.black,
           ),
         ),
       ),

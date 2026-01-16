@@ -177,7 +177,7 @@ class _RequestsControlCenterState extends State<RequestsControlCenter>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
+      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF8F8F8),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -197,7 +197,7 @@ class _RequestsControlCenterState extends State<RequestsControlCenter>
             const Text('Mind Selfies'),
           ],
         ),
-        backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
+        backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF8F8F8),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,

@@ -12,6 +12,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _believeScience = false;
   bool _believeGod = false;
   bool _believeSpirituality = false;
+  bool _isDarkMode = true;
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -27,6 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _believeScience = prefs.getBool('believe_science') ?? false;
       _believeGod = prefs.getBool('believe_god') ?? false;
       _believeSpirituality = prefs.getBool('believe_spirituality') ?? false;
+      _isDarkMode = prefs.getBool('dark_mode') ?? true;
       _isLoading = false;
     });
   }
@@ -38,13 +40,14 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('believe_science', _believeScience);
     await prefs.setBool('believe_god', _believeGod);
     await prefs.setBool('believe_spirituality', _believeSpirituality);
+    await prefs.setBool('dark_mode', _isDarkMode);
 
     if (mounted) {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Belief preferences saved'),
-          duration: Duration(seconds: 2),
+          content: Text('Settings saved! Reload page to apply theme changes.'),
+          duration: Duration(seconds: 3),
         ),
       );
       Navigator.pop(context);
@@ -56,14 +59,14 @@ class _SettingsPageState extends State<SettingsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
+      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF8F8F8),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Settings'),
-        backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
+        backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF8F8F8),
         elevation: 0,
       ),
       body: _isLoading
@@ -91,7 +94,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w300,
-                        color: isDark ? const Color(0xFFC9A961) : const Color(0xFF705C45),
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -102,12 +105,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _believeScience
                                 ? const Color(0xFF008080)
-                                : (isDark ? Colors.white12 : Colors.black12),
+                                : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
                             width: 2,
                           ),
                         ),
@@ -120,7 +123,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: _believeScience ? const Color(0xFF008080) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: _believeScience ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                  color: _believeScience ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black),
                                   width: 2,
                                 ),
                               ),
@@ -149,12 +152,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _believeGod
                                 ? const Color(0xFF008080)
-                                : (isDark ? Colors.white12 : Colors.black12),
+                                : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
                             width: 2,
                           ),
                         ),
@@ -167,7 +170,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: _believeGod ? const Color(0xFF008080) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: _believeGod ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                  color: _believeGod ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black),
                                   width: 2,
                                 ),
                               ),
@@ -196,12 +199,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1A1A1A) : const Color(0xFF1A1A1A),
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: _believeSpirituality
                                 ? const Color(0xFF008080)
-                                : (isDark ? Colors.white12 : Colors.black12),
+                                : (isDark ? Colors.white12 : const Color(0xFFE0E0E0)),
                             width: 2,
                           ),
                         ),
@@ -214,7 +217,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: _believeSpirituality ? const Color(0xFF008080) : Colors.transparent,
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
-                                  color: _believeSpirituality ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black38),
+                                  color: _believeSpirituality ? const Color(0xFF008080) : (isDark ? Colors.white38 : Colors.black),
                                   width: 2,
                                 ),
                               ),
@@ -230,6 +233,71 @@ class _SettingsPageState extends State<SettingsPage> {
                                 fontWeight: FontWeight.w400,
                                 color: isDark ? Colors.white : Colors.black,
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 60),
+
+                    // Dark Mode Section
+                    Text(
+                      'Appearance',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w400,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Choose your preferred theme',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w300,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Dark Mode Toggle
+                    GestureDetector(
+                      onTap: () => setState(() => _isDarkMode = !_isDarkMode),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF008080),
+                            width: 2,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                              color: const Color(0xFF008080),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                _isDarkMode ? 'Dark Mode' : 'Light Mode',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  color: isDark ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                            Switch(
+                              value: _isDarkMode,
+                              onChanged: (value) => setState(() => _isDarkMode = value),
+                              activeColor: const Color(0xFF008080),
+                              activeTrackColor: const Color(0xFF008080).withOpacity(0.5),
                             ),
                           ],
                         ),
