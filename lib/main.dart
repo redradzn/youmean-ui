@@ -1111,7 +1111,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       const Center(
                                         child: Text(
-                                          'Support Creator',
+                                          'Hoard',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w300,
@@ -1471,7 +1471,7 @@ class AboutProjectPage extends StatelessWidget {
                 '2. The system calculates astronomical positions and patterns\n\n'
                 '3. Historical correlations are analyzed (1926-2026 data)\n\n'
                 '4. Probability scores reveal insights about your path\n\n'
-                '5. Support to unlock deeper knowledge tiers',
+                '5. Gather shards to unlock ancient tablets of wisdom',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -1489,144 +1489,603 @@ class AboutProjectPage extends StatelessWidget {
   }
 }
 
-class SupportTiersPage extends StatelessWidget {
+class SupportTiersPage extends StatefulWidget {
   const SupportTiersPage({super.key});
+
+  @override
+  State<SupportTiersPage> createState() => _SupportTiersPageState();
+}
+
+class _SupportTiersPageState extends State<SupportTiersPage> {
+  // User state (in production, this would come from a backend/local storage)
+  int _currentShards = 0;
+  int _currentLevelIndex = 0;
+  final Set<int> _unlockedTablets = {};
+
+  // Level definitions
+  static const List<Map<String, dynamic>> _levels = [
+    {'name': 'Hatched', 'icon': '🥒', 'shardsRequired': 0},
+    {'name': 'Wyrm', 'icon': '🐍', 'shardsRequired': 100},
+    {'name': 'Drake', 'icon': '🦎', 'shardsRequired': 500},
+    {'name': 'Dragon', 'icon': '🐉', 'shardsRequired': 2000},
+    {'name': "Tiamat's Chosen", 'icon': '👑', 'shardsRequired': 10000},
+  ];
+
+  // Tablet definitions
+  static const List<Map<String, dynamic>> _tablets = [
+    {
+      'title': 'Tablet: Lunar Psychology',
+      'preview': 'Discover how lunar cycles influence emotional patterns and decision-making across cultures and millennia.',
+      'shardCost': 50,
+      'priceCost': 5.0,
+    },
+    {
+      'title': 'Tablet: Solar Archetypes',
+      'preview': 'The sun as the source of life - explore how solar positions shape personality and destiny in ancient systems.',
+      'shardCost': 75,
+      'priceCost': 7.0,
+    },
+    {
+      'title': 'Tablet: Planetary Hours',
+      'preview': 'Master the ancient Chaldean system of planetary rulership over hours, days, and moments of power.',
+      'shardCost': 100,
+      'priceCost': 10.0,
+    },
+    {
+      'title': 'Tablet: The Decan Mysteries',
+      'preview': 'Unlock the 36 faces of the zodiac - Egyptian wisdom preserved through Babylonian star-watchers.',
+      'shardCost': 150,
+      'priceCost': 15.0,
+    },
+    {
+      'title': 'Tablet: Nodes of Fate',
+      'preview': 'The dragon\'s head and tail - karmic points that reveal past life patterns and future potential.',
+      'shardCost': 200,
+      'priceCost': 20.0,
+    },
+  ];
+
+  int get _shardsToNextLevel {
+    if (_currentLevelIndex >= _levels.length - 1) return 0;
+    return _levels[_currentLevelIndex + 1]['shardsRequired'] as int;
+  }
+
+  double get _progressToNextLevel {
+    if (_currentLevelIndex >= _levels.length - 1) return 1.0;
+    final currentReq = _levels[_currentLevelIndex]['shardsRequired'] as int;
+    final nextReq = _levels[_currentLevelIndex + 1]['shardsRequired'] as int;
+    final progress = (_currentShards - currentReq) / (nextReq - currentReq);
+    return progress.clamp(0.0, 1.0);
+  }
+
+  void _addShards(int amount) {
+    setState(() {
+      _currentShards += amount;
+      // Check for level up
+      for (int i = _levels.length - 1; i >= 0; i--) {
+        if (_currentShards >= (_levels[i]['shardsRequired'] as int)) {
+          _currentLevelIndex = i;
+          break;
+        }
+      }
+    });
+  }
+
+  void _unlockTablet(int index, {bool withShards = true}) {
+    final tablet = _tablets[index];
+    if (withShards) {
+      if (_currentShards >= (tablet['shardCost'] as int)) {
+        setState(() {
+          _currentShards -= tablet['shardCost'] as int;
+          _unlockedTablets.add(index);
+        });
+      }
+    } else {
+      // Payment flow would go here
+      setState(() {
+        _unlockedTablets.add(index);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tealAccent = const Color(0xFF00CED1);
+    final goldAccent = const Color(0xFFD4AF37);
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Back button
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Back',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w300,
-                        color: isDark ? Colors.white54 : Colors.black,
-                        letterSpacing: 1,
+        child: Column(
+          children: [
+            // Header with back button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Back',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w300,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                          letterSpacing: 1,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Title
-              Text(
-                'Support Tiers',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w200,
-                  letterSpacing: 3,
-                  color: isDark ? Colors.white : Colors.black,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Message
-              Text(
-                'YouMean is currently developed and maintained by one person, Ardet. Your support helps make this vision real.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w300,
-                  color: isDark ? Colors.white60 : Colors.black,
-                  height: 1.6,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Support tiers
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildTierCard('Tier 1', 'Basic Support', isDark),
-                      const SizedBox(height: 16),
-                      _buildTierCard('Tier 2', 'Bronze Support', isDark),
-                      const SizedBox(height: 16),
-                      _buildTierCard('Tier 3', 'Silver Support', isDark),
-                      const SizedBox(height: 16),
-                      _buildTierCard('Tier 4', 'Gold Support', isDark),
-                      const SizedBox(height: 16),
-                      _buildTierCard('Tier 5', 'Platinum Support', isDark),
-                    ],
+                  // Shards display
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [goldAccent.withOpacity(0.2), goldAccent.withOpacity(0.1)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: goldAccent.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('💎', style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$_currentShards Shards',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: goldAccent,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+            ),
 
-  Widget _buildTierCard(String tier, String name, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-          width: 1,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ===== TOP SECTION: LEVELS OF KNOWLEDGE =====
+                    const SizedBox(height: 16),
+                    Text(
+                      'LEVELS OF KNOWLEDGE',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 4,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Level progression
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // Level icons row
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(_levels.length, (index) {
+                                final level = _levels[index];
+                                final isCurrentLevel = index == _currentLevelIndex;
+                                final isUnlocked = index <= _currentLevelIndex;
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Column(
+                                    children: [
+                                      AnimatedContainer(
+                                        duration: const Duration(milliseconds: 300),
+                                        width: isCurrentLevel ? 56 : 44,
+                                        height: isCurrentLevel ? 56 : 44,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isCurrentLevel
+                                              ? tealAccent.withOpacity(0.2)
+                                              : isUnlocked
+                                                  ? goldAccent.withOpacity(0.1)
+                                                  : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                                          border: Border.all(
+                                            color: isCurrentLevel
+                                                ? tealAccent
+                                                : isUnlocked
+                                                    ? goldAccent.withOpacity(0.5)
+                                                    : Colors.transparent,
+                                            width: isCurrentLevel ? 2 : 1,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            level['icon'] as String,
+                                            style: TextStyle(
+                                              fontSize: isCurrentLevel ? 24 : 18,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        level['name'] as String,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: isCurrentLevel ? FontWeight.w500 : FontWeight.w300,
+                                          color: isCurrentLevel
+                                              ? tealAccent
+                                              : isUnlocked
+                                                  ? (isDark ? Colors.white70 : Colors.black.withOpacity(0.7))
+                                                  : (isDark ? Colors.white30 : Colors.black.withOpacity(0.3)),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Current level display
+                          Text(
+                            'Current Level: ${_levels[_currentLevelIndex]['name']}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: tealAccent,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Progress bar
+                          if (_currentLevelIndex < _levels.length - 1) ...[
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: _progressToNextLevel,
+                                backgroundColor: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+                                valueColor: AlwaysStoppedAnimation<Color>(tealAccent),
+                                minHeight: 8,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '$_currentShards / $_shardsToNextLevel to ${_levels[_currentLevelIndex + 1]['name']}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w300,
+                                color: isDark ? Colors.white54 : Colors.black54,
+                              ),
+                            ),
+                          ] else
+                            Text(
+                              'Maximum level achieved!',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: goldAccent,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // ===== MIDDLE SECTION: TABLETS =====
+                    const SizedBox(height: 32),
+                    Text(
+                      'TABLETS',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 4,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Tablet list
+                    ...List.generate(_tablets.length, (index) {
+                      final tablet = _tablets[index];
+                      final isUnlocked = _unlockedTablets.contains(index);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isUnlocked
+                                  ? tealAccent.withOpacity(0.3)
+                                  : (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05)),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    isUnlocked ? Icons.check_circle : Icons.lock_outline,
+                                    size: 20,
+                                    color: isUnlocked ? tealAccent : (isDark ? Colors.white38 : Colors.black38),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      tablet['title'] as String,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? Colors.white : Colors.black,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                tablet['preview'] as String,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w300,
+                                  color: isDark ? Colors.white60 : Colors.black54,
+                                  height: 1.4,
+                                ),
+                              ),
+                              if (!isUnlocked) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: _currentShards >= (tablet['shardCost'] as int)
+                                            ? () => _unlockTablet(index, withShards: true)
+                                            : null,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
+                                            color: _currentShards >= (tablet['shardCost'] as int)
+                                                ? goldAccent.withOpacity(0.2)
+                                                : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _currentShards >= (tablet['shardCost'] as int)
+                                                  ? goldAccent.withOpacity(0.5)
+                                                  : Colors.transparent,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '💎 ${tablet['shardCost']} Shards',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w400,
+                                              color: _currentShards >= (tablet['shardCost'] as int)
+                                                  ? goldAccent
+                                                  : (isDark ? Colors.white38 : Colors.black38),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'OR',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark ? Colors.white30 : Colors.black.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => _unlockTablet(index, withShards: false),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 10),
+                                          decoration: BoxDecoration(
+                                            color: tealAccent.withOpacity(0.15),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: tealAccent.withOpacity(0.4)),
+                                          ),
+                                          child: Text(
+                                            '\$${(tablet['priceCost'] as double).toStringAsFixed(0)}',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                              color: tealAccent,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+
+                    // ===== BOTTOM SECTION: GATHER SHARDS =====
+                    const SizedBox(height: 24),
+                    Text(
+                      'GATHER SHARDS',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 4,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Shard gathering options
+                    Row(
+                      children: [
+                        // Watch
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _addShards(5),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text('👁️', style: TextStyle(fontSize: 28)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Watch',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '+5 shards',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: tealAccent,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Quest
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _addShards(25),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text('⚔️', style: TextStyle(fontSize: 28)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Quest',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '+10-50 shards',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: tealAccent,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Support
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _addShards(100),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    goldAccent.withOpacity(0.15),
+                                    goldAccent.withOpacity(0.05),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: goldAccent.withOpacity(0.3)),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text('💎', style: TextStyle(fontSize: 28)),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Support',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: goldAccent,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Direct',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: goldAccent.withOpacity(0.7),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tier,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: isDark ? Colors.white : Colors.black,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w300,
-                  color: isDark ? Colors.white54 : Colors.black,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: isDark ? Colors.white38 : Colors.black38,
-          ),
-        ],
       ),
     );
   }
@@ -1812,7 +2271,145 @@ class ResultsPage extends StatefulWidget {
 }
 
 class _ResultsPageState extends State<ResultsPage> {
+  String _selectedMode = 'light'; // 'light', 'psychology', 'astronomy'
   int _yearsToShow = 5; // Default: show last 5 years
+  final ScrollController _horizontalScrollController = ScrollController();
+  int? _hoveredAge; // For Life Line tooltip
+
+  /// Calculate intensity score (0-10) from Psychology + Astronomy data
+  /// Combines three scoring components for accurate life intensity mapping
+  double _calculateIntensity(YearData psychologyData, {YearData? astronomyData}) {
+    // Get text from psychology mode
+    final psychText = '${psychologyData.row1} ${psychologyData.row2} ${psychologyData.row3} ${psychologyData.row4} ${psychologyData.row5}'.toLowerCase();
+
+    // Get major transits from astronomy mode (row4 is "Major Transits")
+    final transitsText = astronomyData?.row4.toLowerCase() ?? '';
+
+    // ========================================
+    // COMPONENT 1: Psychology Keywords (0-4 points)
+    // ========================================
+    int keywordScore = 1; // Default baseline
+
+    // HIGH intensity keywords (+4 points)
+    final highIntensityKeywords = [
+      'testing', 'questioning', 'negotiation', 'restructuring',
+      'reassessing', 'renegotiating', 'threshold', 'crisis',
+      'collide', 'collision', 'reevaluation', 'integrity versus despair',
+      'regret processing', 'reality testing'
+    ];
+
+    // MEDIUM intensity keywords (+2 points)
+    final mediumIntensityKeywords = [
+      'prototyping', 'crystallizing', 'anchoring', 'demonstration',
+      'differentiation', 'transition', 'calibration', 'recalibrating'
+    ];
+
+    // LOW intensity keywords (+0 points)
+    final lowIntensityKeywords = [
+      'consolidation', 'integration', 'acceptance', 'deepening',
+      'peace', 'transcending', 'completion', 'foundational',
+      'forming', 'awakening', 'developing'
+    ];
+
+    // Check for high intensity keywords first
+    bool hasHighKeyword = highIntensityKeywords.any((k) => psychText.contains(k));
+    bool hasMediumKeyword = mediumIntensityKeywords.any((k) => psychText.contains(k));
+    bool hasLowKeyword = lowIntensityKeywords.any((k) => psychText.contains(k));
+
+    if (hasHighKeyword) {
+      keywordScore = 4;
+    } else if (hasMediumKeyword) {
+      keywordScore = 2;
+    } else if (hasLowKeyword) {
+      keywordScore = 0;
+    } else {
+      keywordScore = 1; // Everything else
+    }
+
+    // ========================================
+    // COMPONENT 2: Psychology Status (0-3 points)
+    // ========================================
+    int statusScore = 1; // Default
+
+    if (psychText.contains('tension')) {
+      statusScore = 3;
+    } else if (psychText.contains('active')) {
+      statusScore = 2;
+    } else if (psychText.contains('emerging')) {
+      statusScore = 1;
+    } else if (psychText.contains('stable') || psychText.contains('background')) {
+      statusScore = 0;
+    }
+
+    // ========================================
+    // COMPONENT 3: Astronomy Transits (0-3 points)
+    // ========================================
+    int transitScore = 0;
+
+    // Check for major challenging transits (Saturn/Uranus/Pluto square/opposition/conjunction)
+    bool hasSaturnSquare = transitsText.contains('saturn square');
+    bool hasSaturnOpposition = transitsText.contains('saturn opposition');
+    bool hasSaturnConjunction = transitsText.contains('saturn conjunction');
+    bool hasUranusSquare = transitsText.contains('uranus square');
+    bool hasUranusOpposition = transitsText.contains('uranus opposition');
+    bool hasUranusConjunction = transitsText.contains('uranus conjunction');
+    bool hasPlutoSquare = transitsText.contains('pluto square');
+    bool hasPlutoOpposition = transitsText.contains('pluto opposition');
+    bool hasPlutoConjunction = transitsText.contains('pluto conjunction');
+
+    // Jupiter aspects
+    bool hasJupiterSquare = transitsText.contains('jupiter square');
+    bool hasJupiterOpposition = transitsText.contains('jupiter opposition');
+    bool hasJupiterConjunction = transitsText.contains('jupiter conjunction');
+
+    // Sextiles (milder)
+    bool hasOuterPlanetSextile = transitsText.contains('sextile');
+    bool hasNeptuneConjunction = transitsText.contains('neptune conjunction');
+
+    // Score transits
+    if (hasSaturnSquare || hasSaturnOpposition || hasSaturnConjunction ||
+        hasUranusSquare || hasUranusOpposition || hasUranusConjunction ||
+        hasPlutoSquare || hasPlutoOpposition || hasPlutoConjunction) {
+      transitScore = 3;
+    } else if (hasJupiterSquare || hasJupiterOpposition) {
+      transitScore = 2;
+    } else if (hasJupiterConjunction || hasOuterPlanetSextile || hasNeptuneConjunction) {
+      transitScore = 1;
+    } else {
+      transitScore = 0;
+    }
+
+    // ========================================
+    // TOTAL SCORE (0-10)
+    // ========================================
+    int totalScore = keywordScore + statusScore + transitScore;
+
+    // Return normalized to 0-1 range for chart
+    return (totalScore / 10.0).clamp(0.1, 1.0);
+  }
+
+  /// Apply rolling average smoothing to a list of scores
+  List<double> _smoothScores(List<double> rawScores, {int windowSize = 3}) {
+    if (rawScores.length <= windowSize) return rawScores;
+
+    List<double> smoothed = [];
+    int halfWindow = windowSize ~/ 2;
+
+    for (int i = 0; i < rawScores.length; i++) {
+      int start = (i - halfWindow).clamp(0, rawScores.length - 1);
+      int end = (i + halfWindow + 1).clamp(0, rawScores.length);
+
+      double sum = 0;
+      int count = 0;
+      for (int j = start; j < end; j++) {
+        sum += rawScores[j];
+        count++;
+      }
+      smoothed.add(sum / count);
+    }
+
+    return smoothed;
+  }
 
   @override
   void initState() {
@@ -1821,197 +2418,339 @@ class _ResultsPageState extends State<ResultsPage> {
     if (widget.requestId != null) {
       StorageService.markAsViewed(widget.requestId!);
     }
+    // Keep default at 5 years (most recent)
+  }
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selfie = widget.result.mindSelfie;
+    final tealAccent = const Color(0xFF00CED1);
 
     if (selfie == null) {
       return _buildFallbackPage(isDark);
     }
 
-    // Get years to display based on slider
-    final displayYears = selfie.years.length > _yearsToShow
-        ? selfie.years.sublist(selfie.years.length - _yearsToShow)
-        : selfie.years;
+    // Get data for the selected mode
+    final allYears = selfie.getYearsForMode(_selectedMode);
+    final labels = selfie.getRowLabelsForMode(_selectedMode);
 
-    final labels = selfie.rowLabels;
+    // Filter years based on slider (show last N years)
+    final displayYears = allYears.length > _yearsToShow
+        ? allYears.sublist(allYears.length - _yearsToShow)
+        : allYears;
+    final totalYearsAvailable = allYears.length;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFF000000),
+      backgroundColor: isDark ? const Color(0xFF0D1B1E) : const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Back button
+            // Header with back button
             Padding(
-              padding: const EdgeInsets.only(left: 8, top: 8),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios,
-                    size: 20,
-                    color: isDark ? Colors.white70 : Colors.black,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ),
-
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
                 children: [
-                  Text(
-                    'Mind Selfie',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w200,
-                      color: isDark ? Colors.white : Colors.black,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${selfie.beliefSystem.toUpperCase()} PERSPECTIVE',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 1.5,
-                      color: isDark ? Colors.white38 : Colors.black38,
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.arrow_back_ios,
+                            size: 14,
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Back',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w300,
+                              color: isDark ? Colors.white54 : Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 32),
+            // Title: Mind Selfie
+            Text(
+              'Mind Selfie',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w200,
+                color: isDark ? Colors.white : Colors.black87,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(height: 16),
 
-            // Scrollable table
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF9F9F9),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: DataTable(
-                        headingRowHeight: 48,
-                        dataRowHeight: 64,
-                        horizontalMargin: 16,
-                        columnSpacing: 40,
-                        dividerThickness: 0,
-                        columns: [
-                          DataColumn(
-                            label: SizedBox(
-                              width: 120,
+            // Mode Tab Selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A2F33) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? tealAccent.withOpacity(0.3) : Colors.black.withOpacity(0.1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    _buildModeTab('LIGHT', 'light', tealAccent, isDark),
+                    _buildModeTab('PSYCHOLOGY', 'psychology', tealAccent, isDark),
+                    _buildModeTab('ASTRONOMY', 'astronomy', tealAccent, isDark),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Life Line Graph
+            _buildLifeLineGraph(selfie, tealAccent, isDark),
+            const SizedBox(height: 16),
+
+            // Location and Babylonian Date
+            if (selfie.location.isNotEmpty || selfie.babylonianDate.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1A2F33) : Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? tealAccent.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (selfie.location.isNotEmpty)
+                        Row(
+                          children: [
+                            Text(
+                              'Location: ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: tealAccent,
+                              ),
+                            ),
+                            Expanded(
                               child: Text(
-                                '',
+                                selfie.location,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: isDark ? Colors.white38 : Colors.black38,
+                                  fontWeight: FontWeight.w300,
+                                  color: isDark ? Colors.white70 : Colors.black54,
                                 ),
                               ),
                             ),
-                          ),
-                          ...displayYears.map((year) {
-                            return DataColumn(
-                              label: Container(
-                                width: 100,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  'Age ${year.age}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
-                                    letterSpacing: 0.5,
-                                    color: isDark ? Colors.white60 : Colors.black,
-                                  ),
+                          ],
+                        ),
+                      if (selfie.location.isNotEmpty && selfie.babylonianDate.isNotEmpty)
+                        const SizedBox(height: 4),
+                      if (selfie.babylonianDate.isNotEmpty)
+                        Row(
+                          children: [
+                            Text(
+                              'Babylonian Date: ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: tealAccent,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                selfie.babylonianDate,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w300,
+                                  color: isDark ? Colors.white70 : Colors.black54,
                                 ),
                               ),
-                            );
-                          }),
-                        ],
-                        rows: [
-                          _buildDataRow(labels[0], displayYears.map((y) => y.row1).toList(), isDark),
-                          _buildDataRow(labels[1], displayYears.map((y) => y.row2).toList(), isDark),
-                          _buildDataRow(labels[2], displayYears.map((y) => y.row3).toList(), isDark),
-                          _buildDataRow(labels[3], displayYears.map((y) => y.row4).toList(), isDark),
-                          _buildDataRow(labels[4], displayYears.map((y) => y.row5).toList(), isDark),
-                        ],
-                      ),
-                    ),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
               ),
+            const SizedBox(height: 16),
+
+            // Scrollable Data Table
+            Expanded(
+              child: displayYears.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No data available for ${_selectedMode.toUpperCase()} mode',
+                        style: TextStyle(
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SingleChildScrollView(
+                          controller: _horizontalScrollController,
+                          scrollDirection: Axis.horizontal,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Age Header Row
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: tealAccent.withOpacity(0.15),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(12),
+                                    topRight: Radius.circular(12),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Empty cell for row labels
+                                    Container(
+                                      width: 110,
+                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                      child: Text(
+                                        '',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? Colors.white70 : Colors.black87,
+                                        ),
+                                      ),
+                                    ),
+                                    // Age columns
+                                    ...displayYears.map((year) => Container(
+                                      width: 120,
+                                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          left: BorderSide(
+                                            color: tealAccent.withOpacity(0.2),
+                                            width: 1,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Age ${year.age}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: tealAccent,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    )),
+                                  ],
+                                ),
+                              ),
+                              // Data Rows - dynamically built based on available labels
+                              if (labels.isNotEmpty)
+                                _buildStyledDataRow(labels[0], displayYears.map((y) => y.row1).toList(), isDark, tealAccent, 0, isLast: labels.length == 1),
+                              if (labels.length > 1)
+                                _buildStyledDataRow(labels[1], displayYears.map((y) => y.row2).toList(), isDark, tealAccent, 1, isLast: labels.length == 2),
+                              if (labels.length > 2)
+                                _buildStyledDataRow(labels[2], displayYears.map((y) => y.row3).toList(), isDark, tealAccent, 2, isLast: labels.length == 3),
+                              if (labels.length > 3)
+                                _buildStyledDataRow(labels[3], displayYears.map((y) => y.row4).toList(), isDark, tealAccent, 3, isLast: labels.length == 4),
+                              if (labels.length > 4)
+                                _buildStyledDataRow(labels[4], displayYears.map((y) => y.row5).toList(), isDark, tealAccent, 4, isLast: true),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
             ),
 
             // Slider to control years shown
+            if (totalYearsAvailable > 5)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Years displayed',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: isDark ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                        Text(
+                          '$_yearsToShow of $totalYearsAvailable',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: tealAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SliderTheme(
+                      data: SliderThemeData(
+                        activeTrackColor: tealAccent,
+                        inactiveTrackColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE0E0E0),
+                        thumbColor: tealAccent,
+                        overlayColor: tealAccent.withOpacity(0.2),
+                        trackHeight: 3,
+                      ),
+                      child: Slider(
+                        value: _yearsToShow.toDouble(),
+                        min: 5,
+                        max: totalYearsAvailable.toDouble(),
+                        divisions: totalYearsAvailable > 5 ? totalYearsAvailable - 5 : 1,
+                        onChanged: (value) {
+                          setState(() {
+                            _yearsToShow = value.toInt();
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Footer hint
             Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Years displayed',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: isDark ? Colors.white60 : Colors.black,
-                        ),
-                      ),
-                      Text(
-                        '$_yearsToShow of ${selfie.totalYearsAvailable}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      activeTrackColor: const Color(0xFF008080),
-                      inactiveTrackColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFE0E0E0),
-                      thumbColor: const Color(0xFF008080),
-                      overlayColor: const Color(0xFF008080).withOpacity(0.2),
-                      trackHeight: 2,
-                    ),
-                    child: Slider(
-                      value: _yearsToShow.toDouble(),
-                      min: 5,
-                      max: selfie.totalYearsAvailable.toDouble(),
-                      divisions: selfie.totalYearsAvailable - 4,
-                      onChanged: (value) {
-                        setState(() {
-                          _yearsToShow = value.toInt();
-                        });
-                      },
-                    ),
-                  ),
-                  Text(
-                    'Scroll right to see all years →',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w300,
-                      color: isDark ? Colors.white38 : Colors.black38,
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              child: Text(
+                '← Scroll horizontally to see all ages →',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w300,
+                  color: isDark ? Colors.white38 : Colors.black38,
+                ),
               ),
             ),
           ],
@@ -2020,53 +2759,549 @@ class _ResultsPageState extends State<ResultsPage> {
     );
   }
 
-  DataRow _buildDataRow(String label, List<String> values, bool isDark) {
-    return DataRow(
-      cells: [
-        DataCell(
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
+  /// Build the Life Line graph showing psychological intensity across ages
+  /// Uses CustomPaint for full control over coordinate mapping
+  Widget _buildLifeLineGraph(MindSelfie selfie, Color tealAccent, bool isDark) {
+    // Get data for tooltips and interactions
+    final psychologyYears = selfie.psychologyYears;
+    final lightYears = selfie.lightYears;
+
+    // Hardcoded Life Line scores (demo data)
+    const List<double> scores = [3, 3, 3, 3, 2, 3, 5, 4, 4, 4, 5, 6, 6, 7, 6, 6, 5, 6, 7, 6, 6, 8, 10, 7];
+    final maxAge = scores.length - 1;
+
+    // Get "Right Now" text for tooltip from Light mode
+    String getRightNowText(int age) {
+      if (age < lightYears.length) {
+        return lightYears[age].row1;
+      }
+      return '';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0D1B1E) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? tealAccent.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title row with demo label
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Life Line',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: tealAccent,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  'DEMO ONLY - INACCURATE FOR NOW',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w400,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            // Age range indicator
+            Text(
+              'Ages 0 to $maxAge',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white : Colors.black,
+                fontSize: 11,
+                fontWeight: FontWeight.w300,
+                color: isDark ? Colors.white54 : Colors.black45,
               ),
+            ),
+            const SizedBox(height: 16),
+            // Custom Canvas Graph
+            SizedBox(
+              height: 180,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return GestureDetector(
+                    onTapDown: (details) {
+                      // Calculate which age was tapped
+                      const leftMargin = 10.0;
+                      const rightMargin = 10.0;
+                      final usableWidth = constraints.maxWidth - leftMargin - rightMargin;
+                      final tapX = details.localPosition.dx - leftMargin;
+                      final tappedAge = ((tapX / usableWidth) * maxAge).round().clamp(0, maxAge);
+
+                      // Scroll to that age in the table
+                      if (tappedAge < psychologyYears.length) {
+                        const columnWidth = 120.0;
+                        final scrollPosition = tappedAge * columnWidth;
+                        _horizontalScrollController.animateTo(
+                          scrollPosition,
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+
+                      // Update hovered age for tooltip
+                      setState(() {
+                        _hoveredAge = tappedAge;
+                      });
+                    },
+                    onPanUpdate: (details) {
+                      const leftMargin = 10.0;
+                      const rightMargin = 10.0;
+                      final usableWidth = constraints.maxWidth - leftMargin - rightMargin;
+                      final tapX = details.localPosition.dx - leftMargin;
+                      final hoveredAge = ((tapX / usableWidth) * maxAge).round().clamp(0, maxAge);
+                      setState(() {
+                        _hoveredAge = hoveredAge;
+                      });
+                    },
+                    onPanEnd: (_) {
+                      setState(() {
+                        _hoveredAge = null;
+                      });
+                    },
+                    onTapUp: (_) {
+                      Future.delayed(const Duration(seconds: 2), () {
+                        if (mounted) {
+                          setState(() {
+                            _hoveredAge = null;
+                          });
+                        }
+                      });
+                    },
+                    child: Stack(
+                      children: [
+                        // The graph canvas
+                        CustomPaint(
+                          size: Size(constraints.maxWidth, 180),
+                          painter: _LifeLinePainter(
+                            scores: scores,
+                            maxAge: maxAge,
+                            tealAccent: tealAccent,
+                            isDark: isDark,
+                            hoveredAge: _hoveredAge,
+                          ),
+                        ),
+                        // Tooltip overlay
+                        if (_hoveredAge != null && _hoveredAge! >= 0 && _hoveredAge! <= maxAge)
+                          Positioned(
+                            left: _calculateTooltipX(constraints.maxWidth, _hoveredAge!, maxAge),
+                            top: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1A2F33) : Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Age $_hoveredAge',
+                                    style: TextStyle(
+                                      color: tealAccent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (getRightNowText(_hoveredAge!).isNotEmpty)
+                                    Text(
+                                      getRightNowText(_hoveredAge!),
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white70 : Colors.black87,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Disclaimer
+            Text(
+              'Life Line shows psychological intensity across your life. Tap to see details. Not a health assessment.',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w300,
+                fontStyle: FontStyle.italic,
+                color: isDark ? Colors.white30 : Colors.black26,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _calculateTooltipX(double containerWidth, int age, int maxAge) {
+    const leftMargin = 10.0;
+    const rightMargin = 10.0;
+    final usableWidth = containerWidth - leftMargin - rightMargin;
+    final x = leftMargin + (age / maxAge) * usableWidth;
+    // Keep tooltip within bounds
+    return (x - 40).clamp(0.0, containerWidth - 100);
+  }
+
+  Widget _buildModeTab(String label, String mode, Color tealAccent, bool isDark) {
+    final isSelected = _selectedMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedMode = mode;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? tealAccent : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              letterSpacing: 1,
+              color: isSelected
+                  ? (isDark ? Colors.black : Colors.white)
+                  : (isDark ? Colors.white54 : Colors.black54),
             ),
           ),
         ),
-        ...values.map((value) {
-          return DataCell(
-            Container(
-              width: 100,
-              alignment: Alignment.center,
-              child: Text(
-                value,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w300,
-                  color: isDark ? Colors.white70 : Colors.black,
+      ),
+    );
+  }
+
+  Widget _buildStyledDataRow(String label, List<String> values, bool isDark, Color tealAccent, int rowIndex, {bool isLast = false}) {
+    final bgColor = rowIndex.isEven
+        ? (isDark ? const Color(0xFF162428) : Colors.white)
+        : (isDark ? const Color(0xFF1A2F33) : const Color(0xFFF8FAFA));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: isLast
+            ? const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              )
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row label
+          Container(
+            width: 110,
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: tealAccent,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+          // Data cells
+          ...values.map((value) => Container(
+            width: 120,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                  width: 1,
                 ),
               ),
             ),
-          );
-        }),
-      ],
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w300,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          )),
+        ],
+      ),
     );
   }
 
   Widget _buildFallbackPage(bool isDark) {
     return Scaffold(
-      body: Center(
-        child: Text(
-          'No Mind Selfie data available',
-          style: TextStyle(
-            color: isDark ? Colors.white60 : Colors.black,
-          ),
+      backgroundColor: isDark ? const Color(0xFF0D1B1E) : const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Back',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white54 : Colors.black54,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  'No Mind Selfie data available',
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : Colors.black54,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+}
+
+/// Custom painter for Life Line graph - ECG heart monitor style
+class _LifeLinePainter extends CustomPainter {
+  final List<double> scores;
+  final int maxAge;
+  final Color tealAccent;
+  final bool isDark;
+  final int? hoveredAge;
+
+  _LifeLinePainter({
+    required this.scores,
+    required this.maxAge,
+    required this.tealAccent,
+    required this.isDark,
+    this.hoveredAge,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (scores.isEmpty) return;
+
+    // Fixed score range
+    const double minScore = 2;
+    const double maxScore = 10;
+
+    // Fixed graph boundaries
+    const double graphTop = 20;
+    final double graphBottom = size.height - 40;
+    final double availableHeight = graphBottom - graphTop;
+
+    // Margins for X axis
+    const double leftPadding = 10.0;
+    const double rightPadding = 10.0;
+    final double availableWidth = size.width - leftPadding - rightPadding;
+
+    // Calculate pixel points using exact formula
+    List<Offset> points = [];
+    for (int i = 0; i < scores.length; i++) {
+      final double normalised = (scores[i] - minScore) / (maxScore - minScore);
+      final double y = graphBottom - (normalised * availableHeight);
+      final double x = leftPadding + (i / (scores.length - 1)) * availableWidth;
+      points.add(Offset(x, y));
+    }
+
+    if (points.length < 2) return;
+
+    // ========== ECG STYLE DRAWING ==========
+
+    // 1. Draw subtle horizontal grid lines (ECG baseline reference)
+    final gridPaint = Paint()
+      ..color = tealAccent.withOpacity(0.08)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    // Draw 3 horizontal grid lines
+    for (int i = 1; i <= 3; i++) {
+      final gridY = graphTop + (availableHeight * i / 4);
+      canvas.drawLine(
+        Offset(leftPadding, gridY),
+        Offset(size.width - rightPadding, gridY),
+        gridPaint,
+      );
+    }
+
+    // 2. Create STRAIGHT line path (no curves - ECG style)
+    final linePath = Path();
+    linePath.moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      linePath.lineTo(points[i].dx, points[i].dy);
+    }
+
+    // 3. Create fill path for subtle glow under line
+    final fillPath = Path();
+    fillPath.moveTo(points.first.dx, graphBottom);
+    fillPath.lineTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      fillPath.lineTo(points[i].dx, points[i].dy);
+    }
+    fillPath.lineTo(points.last.dx, graphBottom);
+    fillPath.close();
+
+    // Draw very subtle gradient fill
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          tealAccent.withOpacity(0.15),
+          tealAccent.withOpacity(0.02),
+        ],
+      ).createShader(Rect.fromLTWH(0, graphTop, size.width, availableHeight));
+    canvas.drawPath(fillPath, fillPaint);
+
+    // 4. Draw GLOWING line effect (multiple passes for glow)
+    // Outer glow - wide and faint
+    final outerGlowPaint = Paint()
+      ..color = tealAccent.withOpacity(0.15)
+      ..strokeWidth = 8
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(linePath, outerGlowPaint);
+
+    // Middle glow
+    final middleGlowPaint = Paint()
+      ..color = tealAccent.withOpacity(0.3)
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(linePath, middleGlowPaint);
+
+    // Inner glow - brighter
+    final innerGlowPaint = Paint()
+      ..color = tealAccent.withOpacity(0.6)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(linePath, innerGlowPaint);
+
+    // Core line - BRIGHT and sharp
+    final brightTeal = Color.lerp(tealAccent, Colors.white, 0.3)!;
+    final linePaint = Paint()
+      ..color = brightTeal
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(linePath, linePaint);
+
+    // 5. Draw small dots at data points (ECG style - minimal)
+    final lastIndex = scores.length - 1;
+    final interval = lastIndex <= 10 ? 2 : (lastIndex <= 30 ? 5 : 10);
+
+    for (int i = 0; i < points.length; i++) {
+      final point = points[i];
+      final isLastAge = i == lastIndex;
+      final isHovered = hoveredAge == i;
+
+      if (isLastAge) {
+        // Current age - larger glowing dot
+        // Glow layers
+        canvas.drawCircle(point, 10, Paint()..color = tealAccent.withOpacity(0.2));
+        canvas.drawCircle(point, 6, Paint()..color = tealAccent.withOpacity(0.4));
+        canvas.drawCircle(point, 4, Paint()..color = tealAccent);
+        canvas.drawCircle(point, 2, Paint()..color = brightTeal);
+      } else if (isHovered) {
+        // Hovered point - medium glow
+        canvas.drawCircle(point, 6, Paint()..color = tealAccent.withOpacity(0.3));
+        canvas.drawCircle(point, 3, Paint()..color = tealAccent);
+        canvas.drawCircle(point, 1.5, Paint()..color = brightTeal);
+      } else if (i % interval == 0) {
+        // Interval marks - tiny dots
+        canvas.drawCircle(point, 2, Paint()..color = tealAccent.withOpacity(0.6));
+      }
+    }
+
+    // 6. Draw X-axis labels
+    final textStyle = TextStyle(
+      fontSize: 9,
+      fontWeight: FontWeight.w300,
+      color: isDark ? Colors.white30 : Colors.black.withOpacity(0.3),
+    );
+    final lastAgeTextStyle = TextStyle(
+      fontSize: 9,
+      fontWeight: FontWeight.w600,
+      color: tealAccent,
+    );
+
+    for (int i = 0; i < scores.length; i++) {
+      final isLastAge = i == lastIndex;
+      final isIntervalMark = i % interval == 0;
+
+      if (i == 0 || isIntervalMark || isLastAge) {
+        final x = leftPadding + (i / lastIndex) * availableWidth;
+        final textSpan = TextSpan(
+          text: i.toString(),
+          style: isLastAge ? lastAgeTextStyle : textStyle,
+        );
+        final textPainter = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(x - textPainter.width / 2, size.height - 18),
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LifeLinePainter oldDelegate) {
+    return oldDelegate.scores != scores ||
+        oldDelegate.hoveredAge != hoveredAge ||
+        oldDelegate.isDark != isDark;
   }
 }
