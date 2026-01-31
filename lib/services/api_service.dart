@@ -5,10 +5,10 @@ import 'package:http/http.dart' as http;
 class ApiService {
   // API base URL - can be overridden at build time with:
   // flutter build web --dart-define=API_URL=https://your-ngrok-url.ngrok-free.dev
-  // Current ngrok URL: https://dennise-cartable-unquixotically.ngrok-free.dev
+  // For local development: http://localhost:3000
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://dennise-cartable-unquixotically.ngrok-free.dev',
+    defaultValue: 'http://localhost:3000',
   );
 
   /// Submit birth data to local server and get request ID
@@ -138,39 +138,109 @@ class YearData {
   }
 }
 
-/// Mind Selfie result
+/// Mind Selfie result with 3 modes: Light, Psychology, Astronomy
 class MindSelfie {
   final String beliefSystem; // "science", "god", or "spirituality"
-  final List<YearData> years;
+  final String location;
+  final String babylonianDate;
+  final List<YearData> lightYears;      // Light mode data
+  final List<YearData> psychologyYears; // Psychology mode data
+  final List<YearData> astronomyYears;  // Astronomy mode data
   final int userAge;
   final int totalYearsAvailable;
 
   MindSelfie({
     required this.beliefSystem,
-    required this.years,
+    this.location = '',
+    this.babylonianDate = '',
+    required this.lightYears,
+    List<YearData>? psychologyYears,
+    List<YearData>? astronomyYears,
     required this.userAge,
     required this.totalYearsAvailable,
-  });
+  }) : psychologyYears = psychologyYears ?? lightYears,
+       astronomyYears = astronomyYears ?? lightYears;
 
-  List<String> get rowLabels {
-    switch (beliefSystem) {
-      case 'science':
-        return ['Self Summary', 'Mental Health', 'Spark', 'Integration', 'Completion'];
-      case 'god':
-        return ['Self Summary', 'Inner Peace', 'Trust', 'Devotion', 'Unity'];
-      case 'spirituality':
-        return ['Self Summary', 'Inner Harmony', 'Motivation', 'Journey', 'Enlightenment'];
+  // Legacy getter for backward compatibility
+  List<YearData> get years => lightYears;
+
+  // Row labels for each mode
+  static const List<String> lightRowLabels = [
+    'Right Now',
+    'Advice'
+  ];
+
+  static const List<String> psychologyRowLabels = [
+    'Self Summary',
+    'Neural Pattern',
+    'Life Experience',
+    'Developmental Context',
+    'Integration Insight'
+  ];
+
+  static const List<String> astronomyRowLabels = [
+    'Season/Year',
+    'Planetary Positions',
+    'Lunar Cycle',
+    'Major Transits',
+    'Babylonian Calendar'
+  ];
+
+  List<String> get rowLabels => lightRowLabels;
+
+  List<String> getRowLabelsForMode(String mode) {
+    switch (mode) {
+      case 'light':
+        return lightRowLabels;
+      case 'psychology':
+        return psychologyRowLabels;
+      case 'astronomy':
+        return astronomyRowLabels;
       default:
-        return ['Self Summary', 'Inner Harmony', 'Motivation', 'Journey', 'Enlightenment'];
+        return lightRowLabels;
+    }
+  }
+
+  List<YearData> getYearsForMode(String mode) {
+    switch (mode) {
+      case 'light':
+        return lightYears;
+      case 'psychology':
+        return psychologyYears;
+      case 'astronomy':
+        return astronomyYears;
+      default:
+        return lightYears;
     }
   }
 
   factory MindSelfie.fromJson(Map<String, dynamic> json) {
+    // Parse light years (required, also serves as fallback)
+    final lightYears = json['light_years'] != null
+        ? (json['light_years'] as List).map((y) => YearData.fromJson(y)).toList()
+        : json['years'] != null
+            ? (json['years'] as List).map((y) => YearData.fromJson(y)).toList()
+            : <YearData>[];
+
+    // Parse psychology years (optional)
+    final psychologyYears = json['psychology_years'] != null
+        ? (json['psychology_years'] as List).map((y) => YearData.fromJson(y)).toList()
+        : null;
+
+    // Parse astronomy years (optional)
+    final astronomyYears = json['astronomy_years'] != null
+        ? (json['astronomy_years'] as List).map((y) => YearData.fromJson(y)).toList()
+        : null;
+
     return MindSelfie(
-      beliefSystem: json['belief_system'] as String,
-      years: (json['years'] as List).map((y) => YearData.fromJson(y)).toList(),
-      userAge: json['user_age'] as int,
-      totalYearsAvailable: json['total_years_available'] as int,
+      beliefSystem: json['belief_system'] as String? ?? 'spirituality',
+      location: json['location'] as String? ?? '',
+      babylonianDate: json['babylonian_date'] as String? ?? '',
+      lightYears: lightYears,
+      psychologyYears: psychologyYears,
+      astronomyYears: astronomyYears,
+      userAge: json['user_age'] as int? ?? 0,
+      totalYearsAvailable: json['total_years_available'] as int? ?? lightYears.length,
     );
   }
 }
