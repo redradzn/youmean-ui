@@ -2275,6 +2275,7 @@ class _ResultsPageState extends State<ResultsPage> {
   int _yearsToShow = 5; // Default: show last 5 years
   final ScrollController _horizontalScrollController = ScrollController();
   int? _hoveredAge; // For Life Line tooltip
+  bool _isLifeLineExpanded = false; // Life Line dropdown state
 
   /// Calculate intensity score (0-10) from Psychology + Astronomy data
   /// Combines three scoring components for accurate life intensity mapping
@@ -2431,7 +2432,10 @@ class _ResultsPageState extends State<ResultsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selfie = widget.result.mindSelfie;
-    final tealAccent = const Color(0xFF00CED1);
+    // Gold: User's story, data identifiers, section headers (vibrant to match logo)
+    const goldAccent = Color(0xFFD4A84B);
+    // Teal: Interactive elements only (vibrant cyan to match logo)
+    const tealAccent = Color(0xFF00CED1);
 
     if (selfie == null) {
       return _buildFallbackPage(isDark);
@@ -2498,7 +2502,7 @@ class _ResultsPageState extends State<ResultsPage> {
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w200,
-                color: isDark ? Colors.white : Colors.black87,
+                color: Colors.white,
                 letterSpacing: 1,
               ),
             ),
@@ -2526,8 +2530,67 @@ class _ResultsPageState extends State<ResultsPage> {
             ),
             const SizedBox(height: 16),
 
-            // Life Line Graph
-            _buildLifeLineGraph(selfie, tealAccent, isDark),
+            // Life Line Graph - Collapsible
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  // Dropdown header
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isLifeLineExpanded = !_isLifeLineExpanded;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0D1B1E) : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(_isLifeLineExpanded ? 12 : 12),
+                        border: Border.all(
+                          color: isDark ? tealAccent.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Life Line',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: goldAccent,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'DEMO ONLY',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w400,
+                                  color: isDark ? Colors.white38 : Colors.black38,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Icon(
+                            _isLifeLineExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                            color: tealAccent,
+                            size: 24,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Expandable content
+                  if (_isLifeLineExpanded)
+                    _buildLifeLineGraphContent(selfie, goldAccent, tealAccent, isDark),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
 
             // Location and Babylonian Date
@@ -2540,7 +2603,7 @@ class _ResultsPageState extends State<ResultsPage> {
                     color: isDark ? const Color(0xFF1A2F33) : Colors.white,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isDark ? tealAccent.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+                      color: isDark ? goldAccent.withOpacity(0.15) : Colors.black.withOpacity(0.05),
                     ),
                   ),
                   child: Column(
@@ -2554,7 +2617,7 @@ class _ResultsPageState extends State<ResultsPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: tealAccent,
+                                color: goldAccent,
                               ),
                             ),
                             Expanded(
@@ -2563,7 +2626,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w300,
-                                  color: isDark ? Colors.white70 : Colors.black54,
+                                  color: isDark ? Colors.white : Colors.black87,
                                 ),
                               ),
                             ),
@@ -2579,7 +2642,7 @@ class _ResultsPageState extends State<ResultsPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: tealAccent,
+                                color: goldAccent,
                               ),
                             ),
                             Expanded(
@@ -2588,7 +2651,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w300,
-                                  color: isDark ? Colors.white70 : Colors.black54,
+                                  color: isDark ? Colors.white : Colors.black87,
                                 ),
                               ),
                             ),
@@ -2623,7 +2686,7 @@ class _ResultsPageState extends State<ResultsPage> {
                               // Age Header Row
                               Container(
                                 decoration: BoxDecoration(
-                                  color: tealAccent.withOpacity(0.15),
+                                  color: goldAccent.withOpacity(0.12),
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(12),
                                     topRight: Radius.circular(12),
@@ -2652,7 +2715,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                       decoration: BoxDecoration(
                                         border: Border(
                                           left: BorderSide(
-                                            color: tealAccent.withOpacity(0.2),
+                                            color: goldAccent.withOpacity(0.2),
                                             width: 1,
                                           ),
                                         ),
@@ -2662,7 +2725,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: tealAccent,
+                                          color: goldAccent,
                                           letterSpacing: 0.5,
                                         ),
                                       ),
@@ -2672,15 +2735,15 @@ class _ResultsPageState extends State<ResultsPage> {
                               ),
                               // Data Rows - dynamically built based on available labels
                               if (labels.isNotEmpty)
-                                _buildStyledDataRow(labels[0], displayYears.map((y) => y.row1).toList(), isDark, tealAccent, 0, isLast: labels.length == 1),
+                                _buildStyledDataRow(labels[0], displayYears.map((y) => y.row1).toList(), isDark, goldAccent, 0, isLast: labels.length == 1),
                               if (labels.length > 1)
-                                _buildStyledDataRow(labels[1], displayYears.map((y) => y.row2).toList(), isDark, tealAccent, 1, isLast: labels.length == 2),
+                                _buildStyledDataRow(labels[1], displayYears.map((y) => y.row2).toList(), isDark, goldAccent, 1, isLast: labels.length == 2),
                               if (labels.length > 2)
-                                _buildStyledDataRow(labels[2], displayYears.map((y) => y.row3).toList(), isDark, tealAccent, 2, isLast: labels.length == 3),
+                                _buildStyledDataRow(labels[2], displayYears.map((y) => y.row3).toList(), isDark, goldAccent, 2, isLast: labels.length == 3),
                               if (labels.length > 3)
-                                _buildStyledDataRow(labels[3], displayYears.map((y) => y.row4).toList(), isDark, tealAccent, 3, isLast: labels.length == 4),
+                                _buildStyledDataRow(labels[3], displayYears.map((y) => y.row4).toList(), isDark, goldAccent, 3, isLast: labels.length == 4),
                               if (labels.length > 4)
-                                _buildStyledDataRow(labels[4], displayYears.map((y) => y.row5).toList(), isDark, tealAccent, 4, isLast: true),
+                                _buildStyledDataRow(labels[4], displayYears.map((y) => y.row5).toList(), isDark, goldAccent, 4, isLast: true),
                             ],
                           ),
                         ),
@@ -2710,7 +2773,7 @@ class _ResultsPageState extends State<ResultsPage> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: tealAccent,
+                            color: goldAccent,
                           ),
                         ),
                       ],
@@ -2759,9 +2822,9 @@ class _ResultsPageState extends State<ResultsPage> {
     );
   }
 
-  /// Build the Life Line graph showing psychological intensity across ages
+  /// Build the Life Line graph content (for dropdown)
   /// Uses CustomPaint for full control over coordinate mapping
-  Widget _buildLifeLineGraph(MindSelfie selfie, Color tealAccent, bool isDark) {
+  Widget _buildLifeLineGraphContent(MindSelfie selfie, Color goldAccent, Color tealAccent, bool isDark) {
     // Get data for tooltips and interactions
     final psychologyYears = selfie.psychologyYears;
     final lightYears = selfie.lightYears;
@@ -2778,57 +2841,33 @@ class _ResultsPageState extends State<ResultsPage> {
       return '';
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0D1B1E) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? tealAccent.withOpacity(0.2) : Colors.black.withOpacity(0.05),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0D1B1E) : Colors.grey[100],
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title row with demo label
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Life Line',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: tealAccent,
-                    letterSpacing: 1,
-                  ),
-                ),
-                Text(
-                  'DEMO ONLY - INACCURATE FOR NOW',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w400,
-                    color: isDark ? Colors.white38 : Colors.black38,
-                  ),
-                ),
-              ],
+        border: Border.all(
+          color: isDark ? goldAccent.withOpacity(0.15) : Colors.black.withOpacity(0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Age range indicator
+          Text(
+            'Ages 0 to $maxAge',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w300,
+              color: isDark ? Colors.white54 : Colors.black45,
             ),
-            const SizedBox(height: 4),
-            // Age range indicator
-            Text(
-              'Ages 0 to $maxAge',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w300,
-                color: isDark ? Colors.white54 : Colors.black45,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Custom Canvas Graph
-            SizedBox(
+          ),
+          const SizedBox(height: 12),
+          // Custom Canvas Graph
+          SizedBox(
               height: 180,
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -2889,7 +2928,7 @@ class _ResultsPageState extends State<ResultsPage> {
                           painter: _LifeLinePainter(
                             scores: scores,
                             maxAge: maxAge,
-                            tealAccent: tealAccent,
+                            goldAccent: goldAccent,
                             isDark: isDark,
                             hoveredAge: _hoveredAge,
                           ),
@@ -2919,7 +2958,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                   Text(
                                     'Age $_hoveredAge',
                                     style: TextStyle(
-                                      color: tealAccent,
+                                      color: goldAccent,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -2928,7 +2967,7 @@ class _ResultsPageState extends State<ResultsPage> {
                                     Text(
                                       getRightNowText(_hoveredAge!),
                                       style: TextStyle(
-                                        color: isDark ? Colors.white70 : Colors.black87,
+                                        color: isDark ? Colors.white : Colors.black87,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w400,
                                       ),
@@ -2945,17 +2984,16 @@ class _ResultsPageState extends State<ResultsPage> {
             ),
             const SizedBox(height: 8),
             // Disclaimer
-            Text(
-              'Life Line shows psychological intensity across your life. Tap to see details. Not a health assessment.',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w300,
-                fontStyle: FontStyle.italic,
-                color: isDark ? Colors.white30 : Colors.black26,
-              ),
+          Text(
+            'Life Line shows psychological intensity across your life. Tap to see details. Not a health assessment.',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w300,
+              fontStyle: FontStyle.italic,
+              color: isDark ? Colors.white30 : Colors.black26,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2989,11 +3027,11 @@ class _ResultsPageState extends State<ResultsPage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w300,
               letterSpacing: 1,
               color: isSelected
-                  ? (isDark ? Colors.black : Colors.white)
-                  : (isDark ? Colors.white54 : Colors.black54),
+                  ? Colors.black
+                  : (isDark ? Colors.white30 : Colors.black38),
             ),
           ),
         ),
@@ -3001,7 +3039,7 @@ class _ResultsPageState extends State<ResultsPage> {
     );
   }
 
-  Widget _buildStyledDataRow(String label, List<String> values, bool isDark, Color tealAccent, int rowIndex, {bool isLast = false}) {
+  Widget _buildStyledDataRow(String label, List<String> values, bool isDark, Color labelColor, int rowIndex, {bool isLast = false}) {
     final bgColor = rowIndex.isEven
         ? (isDark ? const Color(0xFF162428) : Colors.white)
         : (isDark ? const Color(0xFF1A2F33) : const Color(0xFFF8FAFA));
@@ -3019,7 +3057,7 @@ class _ResultsPageState extends State<ResultsPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row label
+          // Row label - gold for data identifiers
           Container(
             width: 110,
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
@@ -3028,12 +3066,12 @@ class _ResultsPageState extends State<ResultsPage> {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: tealAccent,
+                color: labelColor,
                 letterSpacing: 0.3,
               ),
             ),
           ),
-          // Data cells
+          // Data cells - white for readable content
           ...values.map((value) => Container(
             width: 120,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
@@ -3051,7 +3089,7 @@ class _ResultsPageState extends State<ResultsPage> {
                 fontSize: 10,
                 fontWeight: FontWeight.w300,
                 height: 1.4,
-                color: isDark ? Colors.white70 : Colors.black87,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           )),
@@ -3110,14 +3148,14 @@ class _ResultsPageState extends State<ResultsPage> {
 class _LifeLinePainter extends CustomPainter {
   final List<double> scores;
   final int maxAge;
-  final Color tealAccent;
+  final Color goldAccent;
   final bool isDark;
   final int? hoveredAge;
 
   _LifeLinePainter({
     required this.scores,
     required this.maxAge,
-    required this.tealAccent,
+    required this.goldAccent,
     required this.isDark,
     this.hoveredAge,
   });
@@ -3155,7 +3193,7 @@ class _LifeLinePainter extends CustomPainter {
 
     // 1. Draw subtle horizontal grid lines (ECG baseline reference)
     final gridPaint = Paint()
-      ..color = tealAccent.withOpacity(0.08)
+      ..color = goldAccent.withOpacity(0.08)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -3192,8 +3230,8 @@ class _LifeLinePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          tealAccent.withOpacity(0.15),
-          tealAccent.withOpacity(0.02),
+          goldAccent.withOpacity(0.15),
+          goldAccent.withOpacity(0.02),
         ],
       ).createShader(Rect.fromLTWH(0, graphTop, size.width, availableHeight));
     canvas.drawPath(fillPath, fillPaint);
@@ -3201,7 +3239,7 @@ class _LifeLinePainter extends CustomPainter {
     // 4. Draw GLOWING line effect (multiple passes for glow)
     // Outer glow - wide and faint
     final outerGlowPaint = Paint()
-      ..color = tealAccent.withOpacity(0.15)
+      ..color = goldAccent.withOpacity(0.15)
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -3210,7 +3248,7 @@ class _LifeLinePainter extends CustomPainter {
 
     // Middle glow
     final middleGlowPaint = Paint()
-      ..color = tealAccent.withOpacity(0.3)
+      ..color = goldAccent.withOpacity(0.3)
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -3219,7 +3257,7 @@ class _LifeLinePainter extends CustomPainter {
 
     // Inner glow - brighter
     final innerGlowPaint = Paint()
-      ..color = tealAccent.withOpacity(0.6)
+      ..color = goldAccent.withOpacity(0.6)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -3227,9 +3265,9 @@ class _LifeLinePainter extends CustomPainter {
     canvas.drawPath(linePath, innerGlowPaint);
 
     // Core line - BRIGHT and sharp
-    final brightTeal = Color.lerp(tealAccent, Colors.white, 0.3)!;
+    final brightGold = Color.lerp(goldAccent, Colors.white, 0.3)!;
     final linePaint = Paint()
-      ..color = brightTeal
+      ..color = brightGold
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -3248,18 +3286,18 @@ class _LifeLinePainter extends CustomPainter {
       if (isLastAge) {
         // Current age - larger glowing dot
         // Glow layers
-        canvas.drawCircle(point, 10, Paint()..color = tealAccent.withOpacity(0.2));
-        canvas.drawCircle(point, 6, Paint()..color = tealAccent.withOpacity(0.4));
-        canvas.drawCircle(point, 4, Paint()..color = tealAccent);
-        canvas.drawCircle(point, 2, Paint()..color = brightTeal);
+        canvas.drawCircle(point, 10, Paint()..color = goldAccent.withOpacity(0.2));
+        canvas.drawCircle(point, 6, Paint()..color = goldAccent.withOpacity(0.4));
+        canvas.drawCircle(point, 4, Paint()..color = goldAccent);
+        canvas.drawCircle(point, 2, Paint()..color = brightGold);
       } else if (isHovered) {
         // Hovered point - medium glow
-        canvas.drawCircle(point, 6, Paint()..color = tealAccent.withOpacity(0.3));
-        canvas.drawCircle(point, 3, Paint()..color = tealAccent);
-        canvas.drawCircle(point, 1.5, Paint()..color = brightTeal);
+        canvas.drawCircle(point, 6, Paint()..color = goldAccent.withOpacity(0.3));
+        canvas.drawCircle(point, 3, Paint()..color = goldAccent);
+        canvas.drawCircle(point, 1.5, Paint()..color = brightGold);
       } else if (i % interval == 0) {
         // Interval marks - tiny dots
-        canvas.drawCircle(point, 2, Paint()..color = tealAccent.withOpacity(0.6));
+        canvas.drawCircle(point, 2, Paint()..color = goldAccent.withOpacity(0.6));
       }
     }
 
@@ -3272,7 +3310,7 @@ class _LifeLinePainter extends CustomPainter {
     final lastAgeTextStyle = TextStyle(
       fontSize: 9,
       fontWeight: FontWeight.w600,
-      color: tealAccent,
+      color: goldAccent,
     );
 
     for (int i = 0; i < scores.length; i++) {
