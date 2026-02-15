@@ -9,6 +9,9 @@
   # Output directory (Flutter web builds to build/web)
   publish = "build/web"
 
+[functions]
+  directory = "netlify/functions"
+
 [build.environment]
   # Environment variables available during build
   FLUTTER_VERSION = "3.38.5"
@@ -19,11 +22,13 @@
   from = "/naemu"
   to = "/.netlify/functions/naemu"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/naemu/"
   to = "/.netlify/functions/naemu"
   status = 200
+  force = true
 
 # Redirect rules for Single Page Application (SPA)
 [[redirects]]
