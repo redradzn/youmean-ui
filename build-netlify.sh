@@ -59,5 +59,12 @@ else
   flutter build web --release --base-href=/
 fi
 
+# Write _redirects with Naemu route before SPA catch-all
+cat > build/web/_redirects << 'REDIRECTS'
+/naemu    /.netlify/functions/naemu   200!
+/naemu/   /.netlify/functions/naemu   200!
+/*        /index.html                 200
+REDIRECTS
+
 echo "✅ Build complete! Output in build/web/"
 ls -la build/web/ | head -10
