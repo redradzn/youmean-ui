@@ -72,6 +72,29 @@ class ApiService {
     }
   }
 
+  /// Submit user feedback
+  static Future<bool> submitFeedback(String message) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/feedback'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: jsonEncode({'message': message}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      print('Error submitting feedback: $e');
+      return false;
+    }
+  }
+
   /// Wait for results with polling (checks every 2 seconds)
   static Future<Map<String, dynamic>?> waitForResults(
     String requestId, {

@@ -7,6 +7,11 @@ import 'models/stored_request.dart';
 import 'widgets/scarab_badge.dart';
 import 'widgets/location_autocomplete.dart';
 import 'screens/settings_page.dart';
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'widgets/feedback_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,7 +117,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final _dateController = TextEditingController();
   final _timeController = TextEditingController();
   final _placeController = TextEditingController();
@@ -134,10 +139,118 @@ class _HomePageState extends State<HomePage> {
   bool _believeSpirituality = false;
   bool _isLoadingPreferences = true;
 
+  // Social island animations
+  late AnimationController _socialIslandController;
+  late Animation<double> _islandFade;
+  late Animation<Offset> _islandSlide;
+  late List<Animation<double>> _iconFades;
+  late List<Animation<double>> _iconScales;
+
+  // Page entrance animations
+  late AnimationController _pageEntranceController;
+  late Animation<double> _logoFade;
+  late Animation<double> _logoScale;
+  late Animation<double> _descFade;
+  late Animation<Offset> _descSlide;
+  // Form elements stagger (time, date, place, slider, button)
+  late List<Animation<double>> _formFades;
+  late List<Animation<Offset>> _formSlides;
+
   @override
   void initState() {
     super.initState();
     _loadBeliefPreferences();
+    _initSocialAnimations();
+    _initPageAnimations();
+  }
+
+  void _initPageAnimations() {
+    _pageEntranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+
+    // Logo: gentle fade + scale
+    _logoFade = CurvedAnimation(
+      parent: _pageEntranceController,
+      curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
+    );
+    _logoScale = Tween<double>(begin: 0.92, end: 1.0).animate(CurvedAnimation(
+      parent: _pageEntranceController,
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOutCubic),
+    ));
+
+    // Description: fade + slight slide up
+    _descFade = CurvedAnimation(
+      parent: _pageEntranceController,
+      curve: const Interval(0.15, 0.45, curve: Curves.easeOut),
+    );
+    _descSlide = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _pageEntranceController,
+      curve: const Interval(0.15, 0.5, curve: Curves.easeOutCubic),
+    ));
+
+    // Form elements: stagger 5 items (time, date, place, slider, button)
+    _formFades = List.generate(5, (i) {
+      final start = 0.3 + (i * 0.1);
+      return CurvedAnimation(
+        parent: _pageEntranceController,
+        curve: Interval(start, (start + 0.3).clamp(0.0, 1.0), curve: Curves.easeOut),
+      );
+    });
+    _formSlides = List.generate(5, (i) {
+      final start = 0.3 + (i * 0.1);
+      return Tween<Offset>(
+        begin: const Offset(0, 0.12),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _pageEntranceController,
+        curve: Interval(start, (start + 0.35).clamp(0.0, 1.0), curve: Curves.easeOutCubic),
+      ));
+    });
+
+    _pageEntranceController.forward();
+  }
+
+  void _initSocialAnimations() {
+    _socialIslandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+
+    // Island container fades in and slides up
+    _islandFade = CurvedAnimation(
+      parent: _socialIslandController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    );
+    _islandSlide = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _socialIslandController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+    ));
+
+    // Each icon staggers in with fade + scale (3 social + feedback + Scarab)
+    _iconFades = List.generate(5, (i) {
+      final start = 0.3 + (i * 0.12);
+      return CurvedAnimation(
+        parent: _socialIslandController,
+        curve: Interval(start, (start + 0.3).clamp(0.0, 1.0), curve: Curves.easeOut),
+      );
+    });
+    _iconScales = List.generate(5, (i) {
+      final start = 0.3 + (i * 0.12);
+      return Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+        parent: _socialIslandController,
+        curve: Interval(start, (start + 0.35).clamp(0.0, 1.0), curve: Curves.elasticOut),
+      ));
+    });
+
+    _socialIslandController.forward();
   }
 
   Future<void> _loadBeliefPreferences() async {
@@ -169,6 +282,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _pageEntranceController.dispose();
+    _socialIslandController.dispose();
     _dateController.dispose();
     _timeController.dispose();
     _placeController.dispose();
@@ -438,34 +553,137 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // App title
-                      Center(
-                        child: Image.asset(
-                          isDark ? 'ardet_assets/umean_dark.png' : 'ardet_assets/umean_logo_light.png',
-                          width: 320,
-                          fit: BoxFit.contain,
+                      FadeTransition(
+                        opacity: _logoFade,
+                        child: ScaleTransition(
+                          scale: _logoScale,
+                          child: Center(
+                            child: Image.asset(
+                              isDark ? 'ardet_assets/umean_dark.png' : 'ardet_assets/umean_logo_light.png',
+                              width: 320,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
                   const SizedBox(height: 32),
 
                   // Description
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'Anon, no data . UX is open source. Like 90\'s freedom without being chained to the internet.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w300,
-                        height: 1.6,
-                        color: isDark ? Colors.white60 : Colors.black,
-                        letterSpacing: 0.3,
+                  SlideTransition(
+                    position: _descSlide,
+                    child: FadeTransition(
+                      opacity: _descFade,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          'Anon, no data . UX is open source. Like 90\'s freedom without being chained to the internet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w300,
+                            height: 1.6,
+                            color: isDark ? Colors.white60 : Colors.black,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 16),
+
+                  // Social links floating island + Scarab badge
+                  Center(
+                  child: AnimatedBuilder(
+                    animation: _socialIslandController,
+                    builder: (context, child) {
+                      final icons = [
+                        _SocialIcon(FontAwesomeIcons.tiktok, 'TikTok', 'https://www.tiktok.com/@red.dzn'),
+                        _SocialIcon(FontAwesomeIcons.discord, 'Discord', 'https://discord.gg/cRXaTesz6w'),
+                        _SocialIcon(FontAwesomeIcons.signalMessenger, 'Signal', 'https://signal.group/youmean'),
+                        _SocialIcon(Icons.feedback_outlined, 'Feedback', null, onTap: () {
+                          showDialog(context: context, builder: (_) => const FeedbackDialog());
+                        }),
+                      ];
+
+                      return SlideTransition(
+                        position: _islandSlide,
+                        child: FadeTransition(
+                          opacity: _islandFade,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.06)
+                                      : Colors.black.withOpacity(0.04),
+                                  borderRadius: BorderRadius.circular(50),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.08)
+                                        : Colors.black.withOpacity(0.06),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: List.generate(icons.length, (i) {
+                                    return Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (i > 0)
+                                          Container(
+                                            width: 1,
+                                            height: 16,
+                                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                                            color: isDark
+                                                ? Colors.white.withOpacity(0.1)
+                                                : Colors.black.withOpacity(0.08),
+                                          ),
+                                        FadeTransition(
+                                          opacity: _iconFades[i],
+                                          child: ScaleTransition(
+                                            scale: _iconScales[i],
+                                            child: IconButton(
+                                              icon: FaIcon(
+                                                icons[i].icon,
+                                                size: 18,
+                                                color: isDark ? Colors.white70 : Colors.black54,
+                                              ),
+                                              tooltip: icons[i].label,
+                                              splashRadius: 20,
+                                              onPressed: icons[i].onTap ?? () => launchUrl(Uri.parse(icons[i].url!)),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  }),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              FadeTransition(
+                                opacity: _iconFades[4],
+                                child: ScaleTransition(
+                                  scale: _iconScales[4],
+                                  child: const ScarabBadge(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  ),
+                  const SizedBox(height: 24),
 
                   // Time Born (moved to top)
-                  Row(
+                  SlideTransition(
+                    position: _formSlides[0],
+                    child: FadeTransition(
+                      opacity: _formFades[0],
+                      child: Row(
                     children: [
                       Expanded(
                         child: GestureDetector(
@@ -587,10 +805,16 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+                  ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Date Born (moved below Time)
-                  GestureDetector(
+                  SlideTransition(
+                    position: _formSlides[1],
+                    child: FadeTransition(
+                      opacity: _formFades[1],
+                      child: GestureDetector(
                     onTap: () async {
                       final now = DateTime.now();
                       final initial = _selectedDate ?? DateTime(2026, 1, 1);
@@ -777,10 +1001,16 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                  ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Place Born with location autocomplete
-                  LocationAutocomplete(
+                  SlideTransition(
+                    position: _formSlides[2],
+                    child: FadeTransition(
+                      opacity: _formFades[2],
+                      child: LocationAutocomplete(
                     controller: _placeController,
                     isDark: isDark,
                     onLocationSelected: (locationData) {
@@ -789,10 +1019,16 @@ class _HomePageState extends State<HomePage> {
                       });
                     },
                   ),
+                  ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Emotional State slider
-                  Column(
+                  SlideTransition(
+                    position: _formSlides[3],
+                    child: FadeTransition(
+                      opacity: _formFades[3],
+                      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
@@ -821,12 +1057,12 @@ class _HomePageState extends State<HomePage> {
                       ),
                       SliderTheme(
                         data: SliderThemeData(
-                          activeTrackColor: const Color(0xFF008080),
+                          activeTrackColor: const Color(0xFFBFA765),
                           inactiveTrackColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0),
-                          thumbColor: const Color(0xFF008080),
-                          overlayColor: const Color(0xFF008080).withOpacity(0.2),
+                          thumbColor: const Color(0xFFBFA765),
+                          overlayColor: const Color(0xFFBFA765).withOpacity(0.15),
                           trackHeight: 4,
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+                          thumbShape: const _StarSliderThumbShape(thumbRadius: 14),
                         ),
                         child: Slider(
                           value: _emotionalState,
@@ -841,10 +1077,16 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+                  ),
+                  ),
                   const SizedBox(height: 40),
 
                   // Calculate button (teal/sandy gradient)
-                  MouseRegion(
+                  SlideTransition(
+                    position: _formSlides[4],
+                    child: FadeTransition(
+                      opacity: _formFades[4],
+                      child: MouseRegion(
                     onEnter: (_) => setState(() => _isCalculateHovered = true),
                     onExit: (_) => setState(() => _isCalculateHovered = false),
                     child: AnimatedScale(
@@ -969,6 +1211,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+                  ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Menu toggle button
@@ -1195,8 +1439,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
             ),
-            // Scarab notification badge
-            const ScarabBadge(),
           ],
         ),
       ),
@@ -2276,6 +2518,7 @@ class _ResultsPageState extends State<ResultsPage> {
   final ScrollController _horizontalScrollController = ScrollController();
   int? _hoveredAge; // For Life Line tooltip
   bool _isLifeLineExpanded = false; // Life Line dropdown state
+  Timer? _feedbackTimer;
 
   /// Calculate intensity score (0-10) from Psychology + Astronomy data
   /// Combines three scoring components for accurate life intensity mapping
@@ -2420,10 +2663,87 @@ class _ResultsPageState extends State<ResultsPage> {
       StorageService.markAsViewed(widget.requestId!);
     }
     // Keep default at 5 years (most recent)
+
+    // Show gentle feedback prompt after 15 seconds
+    _feedbackTimer = Timer(const Duration(seconds: 15), _showFeedbackPrompt);
+  }
+
+  void _showFeedbackPrompt() {
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: false,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1e293b) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF14b8a6).withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'How was your Mind Selfie?',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Share your thoughts with us!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Maybe later',
+                        style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        showDialog(context: context, builder: (_) => const FeedbackDialog());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF14b8a6),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('Share Feedback'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
   void dispose() {
+    _feedbackTimer?.cancel();
     _horizontalScrollController.dispose();
     super.dispose();
   }
@@ -3342,4 +3662,73 @@ class _LifeLinePainter extends CustomPainter {
         oldDelegate.hoveredAge != hoveredAge ||
         oldDelegate.isDark != isDark;
   }
+}
+
+class _StarSliderThumbShape extends SliderComponentShape {
+  final double thumbRadius;
+  const _StarSliderThumbShape({this.thumbRadius = 14});
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) =>
+      Size(thumbRadius * 2, thumbRadius * 2);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+    final color = sliderTheme.thumbColor ?? const Color(0xFF008080);
+
+    // Soft glow
+    final glowPaint = Paint()
+      ..color = color.withOpacity(0.25)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawCircle(center, thumbRadius + 2, glowPaint);
+
+    // Star body
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(_starPath(center, thumbRadius, thumbRadius * 0.45, 5), paint);
+
+    // Inner highlight
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.3)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(_starPath(center, thumbRadius * 0.45, thumbRadius * 0.2, 5), highlightPaint);
+  }
+
+  Path _starPath(Offset center, double outerR, double innerR, int points) {
+    final path = Path();
+    final step = math.pi / points;
+    const startAngle = -math.pi / 2; // Point up
+
+    for (int i = 0; i < points * 2; i++) {
+      final r = i.isEven ? outerR : innerR;
+      final angle = startAngle + i * step;
+      final point = Offset(center.dx + r * math.cos(angle), center.dy + r * math.sin(angle));
+      i == 0 ? path.moveTo(point.dx, point.dy) : path.lineTo(point.dx, point.dy);
+    }
+    path.close();
+    return path;
+  }
+}
+
+class _SocialIcon {
+  final IconData icon;
+  final String label;
+  final String? url;
+  final VoidCallback? onTap;
+  const _SocialIcon(this.icon, this.label, this.url, {this.onTap});
 }
