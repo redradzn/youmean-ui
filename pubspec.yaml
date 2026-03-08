@@ -41,6 +41,15 @@ dependencies:
   # Local storage for request tracking
   shared_preferences: ^2.2.2
 
+  # Charts for Life Line graph
+  fl_chart: ^0.69.0
+
+  # Open URLs in browser
+  url_launcher: ^6.2.0
+
+  # Social media icons
+  font_awesome_flutter: ^10.6.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
