@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/storage_service.dart';
 import '../services/api_service.dart';
 import '../models/stored_request.dart';
@@ -14,22 +13,20 @@ class ScarabBadge extends StatefulWidget {
 }
 
 class _ScarabBadgeState extends State<ScarabBadge>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int _notificationCount = 0;
   Timer? _refreshTimer;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late AnimationController _breatheController;
+  late Animation<double> _breatheAnimation;
   bool _isHovered = false;
-
-  // Position state
-  Offset _position = const Offset(20, 20); // Default: bottom-right (will be adjusted)
-  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Setup pulse animation
+    // Setup notification pulse animation
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -42,8 +39,20 @@ class _ScarabBadgeState extends State<ScarabBadge>
       ),
     );
 
-    // Load saved position
-    _loadPosition();
+    // Always-on breathing animation
+    _breatheController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _breatheAnimation = Tween<double>(begin: 0.95, end: 1.08).animate(
+      CurvedAnimation(
+        parent: _breatheController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _breatheController.repeat(reverse: true);
 
     // Load initial count
     _loadCount();
@@ -53,30 +62,6 @@ class _ScarabBadgeState extends State<ScarabBadge>
       const Duration(seconds: 10),
       (_) => _loadCount(),
     );
-  }
-
-  Future<void> _loadPosition() async {
-    final prefs = await SharedPreferences.getInstance();
-    final x = prefs.getDouble('scarab_x');
-    final y = prefs.getDouble('scarab_y');
-
-    if (mounted && x != null && y != null) {
-      setState(() {
-        _position = Offset(x, y);
-        _isInitialized = true;
-      });
-    } else {
-      // Default position will be set in build based on screen size
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
-
-  Future<void> _savePosition(Offset position) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('scarab_x', position.dx);
-    await prefs.setDouble('scarab_y', position.dy);
   }
 
   void _loadCount() async {
@@ -133,6 +118,7 @@ class _ScarabBadgeState extends State<ScarabBadge>
   void dispose() {
     _refreshTimer?.cancel();
     _pulseController.dispose();
+    _breatheController.dispose();
     super.dispose();
   }
 
@@ -151,57 +137,23 @@ class _ScarabBadgeState extends State<ScarabBadge>
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      return const SizedBox.shrink();
-    }
-
-    final screenSize = MediaQuery.of(context).size;
-
-    // Calculate default position (right edge, vertically centered) if not set
-    final defaultX = screenSize.width - 90; // 30px from right edge + 60px width
-    final defaultY = (screenSize.height / 2) - 30; // Vertically centered (60px height / 2)
-
-    final displayPosition = _position.dx == 20 && _position.dy == 20
-        ? Offset(defaultX, defaultY)
-        : _position;
-
-    return Positioned(
-      left: displayPosition.dx,
-      top: displayPosition.dy,
-      child: Draggable(
-        feedback: _buildScarabButton(isDragging: true),
-        childWhenDragging: Opacity(
-          opacity: 0.3,
-          child: _buildScarabButton(),
-        ),
-        onDragEnd: (details) {
-          // Constrain position to screen bounds
-          final newX = details.offset.dx.clamp(0.0, screenSize.width - 90);
-          final newY = details.offset.dy.clamp(0.0, screenSize.height - 60);
-
-          setState(() {
-            _position = Offset(newX, newY);
-          });
-          _savePosition(_position);
-        },
-        child: _buildScarabButton(),
-      ),
-    );
-  }
-
-  Widget _buildScarabButton({bool isDragging = false}) {
     return MouseRegion(
-      onEnter: (_) => !isDragging ? setState(() => _isHovered = true) : null,
-      onExit: (_) => !isDragging ? setState(() => _isHovered = false) : null,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: isDragging ? null : _onTap,
+        onTap: _onTap,
         child: AnimatedBuilder(
-          animation: _pulseAnimation,
+          animation: Listenable.merge([_pulseAnimation, _breatheAnimation]),
           builder: (context, child) {
-            final scale = _notificationCount > 0
-                ? _pulseAnimation.value
-                : (_isHovered ? 1.05 : 1.0);
+            final double scale;
+            if (_notificationCount > 0) {
+              scale = _pulseAnimation.value;
+            } else if (_isHovered) {
+              scale = 1.05;
+            } else {
+              scale = _breatheAnimation.value;
+            }
 
             return Transform.scale(
               scale: scale,
