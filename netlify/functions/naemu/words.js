@@ -1425,3 +1425,4 @@ const WORDS = [
   "zipper","zipping","ziqpu","ziqpu-stars","zircon","zither","ziusudra","ziz","znachor","zodiac","zombie","zone","zoo","zoology","zooming",
   "zoroastrian","zoroastrianism","zorya","zotz","zu","zucchini","zulu","~100000absolution-deepabsence-of-god"
 ];
+module.exports = WORDS;
